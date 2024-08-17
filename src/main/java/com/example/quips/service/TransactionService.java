@@ -1,5 +1,7 @@
 package com.example.quips.service;
 
+import com.example.quips.model.BovedaCero;
+import com.example.quips.model.DAG;
 import com.example.quips.model.Transaction;
 import com.example.quips.model.User;
 import com.example.quips.repository.TransactionRepository;
@@ -12,16 +14,19 @@ import java.util.Optional;
 
 @Service
 public class TransactionService {
-
     @Autowired
     private TransactionRepository transactionRepository;
 
     @Autowired
     private UserRepository userRepository;
 
-    // Método para crear una nueva transacción
+    @Autowired
+    private BovedaCero bovedaCero; // Instancia de Bóveda Cero
+
+    @Autowired
+    private DAG dag; // Instancia de DAG
+
     public Transaction createTransaction(String senderWalletId, String receiverWalletId, int amount) {
-        // Verificar el saldo del usuario remitente
         User sender = userRepository.findByWalletId(senderWalletId)
                 .orElseThrow(() -> new IllegalArgumentException("Sender wallet ID not found"));
 
@@ -29,41 +34,36 @@ public class TransactionService {
             throw new IllegalArgumentException("Insufficient funds");
         }
 
-        // Selección de transacciones anteriores para el tangle
         String previousTransactionHash = findPreviousTransactionHash(senderWalletId, receiverWalletId);
 
-        // Crear la nueva transacción
-        Transaction transaction = new Transaction();
-        transaction.setSenderWalletId(senderWalletId);
-        transaction.setReceiverWalletId(receiverWalletId);
-        transaction.setAmount(amount);
-        transaction.setPreviousTransactionHash(previousTransactionHash);
+        Transaction transaction = new Transaction(senderWalletId, receiverWalletId, amount, previousTransactionHash);
 
-        // Actualizar el saldo de los usuarios
-        sender.setCoins(sender.getCoins() - amount);
-        User receiver = userRepository.findByWalletId(receiverWalletId)
-                .orElseThrow(() -> new IllegalArgumentException("Receiver wallet ID not found"));
-        receiver.setCoins(receiver.getCoins() + amount);
+        if (dag.validateTransaction(transaction)) {
+            sender.setCoins(sender.getCoins() - amount);
+            User receiver = userRepository.findByWalletId(receiverWalletId)
+                    .orElseThrow(() -> new IllegalArgumentException("Receiver wallet ID not found"));
+            receiver.setCoins(receiver.getCoins() + amount);
 
-        // Guardar la transacción y actualizar los usuarios
-        transactionRepository.save(transaction);
-        userRepository.save(sender);
-        userRepository.save(receiver);
+            transactionRepository.save(transaction);
+            userRepository.save(sender);
+            userRepository.save(receiver);
 
-        return transaction;
+            dag.addTransaction(transaction); // Añadir la transacción al DAG
+
+            return transaction;
+        } else {
+            throw new IllegalArgumentException("Transaction validation failed");
+        }
     }
 
-    // Método para obtener una transacción por su ID
     public Optional<Transaction> getTransactionById(Long id) {
         return transactionRepository.findById(id);
     }
 
-    // Método para obtener todas las transacciones
     public List<Transaction> getAllTransactions() {
         return transactionRepository.findAll();
     }
 
-    // Método para eliminar una transacción por su ID
     public boolean deleteTransaction(Long id) {
         if (transactionRepository.existsById(id)) {
             transactionRepository.deleteById(id);
@@ -73,11 +73,10 @@ public class TransactionService {
         }
     }
 
-    // Método auxiliar para encontrar el hash de la transacción anterior
     private String findPreviousTransactionHash(String senderWalletId, String receiverWalletId) {
-        // Lógica para seleccionar el hash de la transacción anterior
-        return transactionRepository.findTopByOrderByIdDesc()
-                .map(Transaction::getPreviousTransactionHash)
-                .orElse("genesis_hash");
+        // Buscar la transacción más reciente del remitente y devolver su hash
+        return transactionRepository.findTopBySenderWalletIdOrderByIdDesc(senderWalletId)
+                .map(Transaction::getHash)
+                .orElse("genesis_hash"); // Usar "genesis_hash" solo si no se encuentra ninguna transacción previa
     }
 }
