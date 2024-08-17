@@ -17,13 +17,13 @@ public class User {
     private String username;
     private String password;
     private String walletId;
-    private int coins;
+    private double coins;  // Cambiado a double
 
     // Constructor vacío
     public User() {}
 
     // Constructor completo
-    public User(String username, String password, String walletId, int coins) {
+    public User(String username, String password, String walletId, double coins) {
         this.username = username;
         this.password = password;
         this.walletId = walletId;
@@ -63,11 +63,11 @@ public class User {
         this.walletId = walletId;
     }
 
-    public int getCoins() {
+    public double getCoins() {
         return coins;
     }
 
-    public void setCoins(int coins) {
+    public void setCoins(double coins) {
         this.coins = coins;
     }
 }

@@ -30,7 +30,7 @@ public class TransactionService {
     @Autowired
     private Sistema sistema; // Inyección del sistema para manejar fases
 
-    public Transaction createTransaction(String senderWalletId, String receiverWalletId, int amount) {
+    public Transaction createTransaction(String senderWalletId, String receiverWalletId, double amount) {
         User sender = userRepository.findByWalletId(senderWalletId)
                 .orElseThrow(() -> new IllegalArgumentException("Sender wallet ID not found"));
 

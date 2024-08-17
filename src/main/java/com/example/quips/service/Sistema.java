@@ -102,12 +102,12 @@ public class Sistema {
 
     // Método para distribuir recompensas a los jugadores más activos
     private void distribuirRecompensas() {
-        jugadores.sort((j1, j2) -> Integer.compare(j2.getCoins(), j1.getCoins())); // Ordenar por actividad (coins)
+        jugadores.sort((j1, j2) -> Double.compare(j2.getCoins(), j1.getCoins())); // Ordenar por actividad (coins)
 
         if (jugadores.size() >= 3) {
-            jugadores.get(0).setCoins(jugadores.get(0).getCoins() + calcularRecompensa(3));
-            jugadores.get(1).setCoins(jugadores.get(1).getCoins() + calcularRecompensa(2));
-            jugadores.get(2).setCoins(jugadores.get(2).getCoins() + calcularRecompensa(1));
+            jugadores.get(0).setCoins(jugadores.get(0).getCoins() + calcularRecompensa(3.0));
+            jugadores.get(1).setCoins(jugadores.get(1).getCoins() + calcularRecompensa(2.0));
+            jugadores.get(2).setCoins(jugadores.get(2).getCoins() + calcularRecompensa(1.0));
             System.out.println("Recompensas distribuidas a los jugadores más activos en la Fase " + (faseActual - 1));
         } else {
             System.out.println("No hay suficientes jugadores para distribuir recompensas.");
@@ -115,8 +115,8 @@ public class Sistema {
     }
 
     // Método para calcular la recompensa basada en el porcentaje y los tokens emitidos en la fase
-    private int calcularRecompensa(int porcentaje) {
-        int tokensEmitidosEnFase = sistemaConfig.getCuotasPorFase()[faseActual - 1] * sistemaConfig.getTokensPorJugador();
-        return (tokensEmitidosEnFase * porcentaje) / 100;
+    private double calcularRecompensa(double porcentaje) {
+        double tokensEmitidosEnFase = sistemaConfig.getCuotasPorFase()[faseActual - 1] * sistemaConfig.getTokensPorJugador();
+        return (tokensEmitidosEnFase * porcentaje) / 100.0;
     }
 }

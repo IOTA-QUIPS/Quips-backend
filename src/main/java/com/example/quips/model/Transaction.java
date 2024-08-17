@@ -6,7 +6,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 import java.security.MessageDigest;
-import java.util.List;
 
 @Entity
 public class Transaction {
@@ -17,7 +16,7 @@ public class Transaction {
 
     private String senderWalletId;
     private String receiverWalletId;
-    private int amount;
+    private double amount;  // Cambiado a double
     private String previousTransactionHash;
     private String hash;
 
@@ -25,7 +24,7 @@ public class Transaction {
     public Transaction() {}
 
     // Constructor
-    public Transaction(String senderWalletId, String receiverWalletId, int amount, String previousTransactionHash) {
+    public Transaction(String senderWalletId, String receiverWalletId, double amount, String previousTransactionHash) {
         this.senderWalletId = senderWalletId;
         this.receiverWalletId = receiverWalletId;
         this.amount = amount;
@@ -59,11 +58,11 @@ public class Transaction {
         this.receiverWalletId = receiverWalletId;
     }
 
-    public int getAmount() {
+    public double getAmount() {
         return amount;
     }
 
-    public void setAmount(int amount) {
+    public void setAmount(double amount) {
         this.amount = amount;
     }
 
