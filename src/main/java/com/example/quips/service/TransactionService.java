@@ -14,6 +14,7 @@ import java.util.Optional;
 
 @Service
 public class TransactionService {
+
     @Autowired
     private TransactionRepository transactionRepository;
 
@@ -25,6 +26,9 @@ public class TransactionService {
 
     @Autowired
     private DAG dag; // Instancia de DAG
+
+    @Autowired
+    private Sistema sistema; // Inyección del sistema para manejar fases
 
     public Transaction createTransaction(String senderWalletId, String receiverWalletId, int amount) {
         User sender = userRepository.findByWalletId(senderWalletId)
@@ -49,6 +53,9 @@ public class TransactionService {
             userRepository.save(receiver);
 
             dag.addTransaction(transaction); // Añadir la transacción al DAG
+
+            // Registrar la transacción en el sistema para verificar la fase
+            sistema.registrarTransaccion();
 
             return transaction;
         } else {

@@ -1,9 +1,13 @@
 package com.example.quips.controller;
 
+import com.example.quips.config.SistemaConfig;
+import com.example.quips.model.BovedaCero;
 import com.example.quips.model.User;
 import com.example.quips.repository.UserRepository;
+import com.example.quips.service.Sistema; // Importa el servicio Sistema
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +21,15 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SistemaConfig sistemaConfig;  // Inyección de SistemaConfig
+
+    @Autowired
+    private BovedaCero bovedaCero;  // Inyección de BovedaCero
+
+    @Autowired
+    private Sistema sistema;  // Inyección del servicio Sistema
 
     // Obtener todos los usuarios
     @GetMapping
@@ -33,8 +46,40 @@ public class UserController {
 
     // Crear un nuevo usuario
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userRepository.save(user);
+    public ResponseEntity<String> createUser(@RequestBody User user) {
+        // Verificar si se ha alcanzado el límite de jugadores para la fase actual
+        int jugadoresEnFase = sistema.getJugadoresEnFase();
+        int transaccionesEnFase = sistema.getTransaccionesEnFase();
+        int cuotaFaseActual = sistemaConfig.getCuotasPorFase()[sistema.getFaseActual() - 1];
+
+        if (jugadoresEnFase >= cuotaFaseActual && transaccionesEnFase < cuotaFaseActual) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("No se puede agregar más jugadores hasta que se completen suficientes transacciones.");
+        }
+
+        // Proceder con la creación del usuario
+        int tokensAsignados = sistemaConfig.getTokensPorJugador();
+        long tokensDisponibles = bovedaCero.getTokens();
+
+        if (tokensDisponibles >= tokensAsignados) {
+            user.setCoins(tokensAsignados);
+            bovedaCero.restarTokens(tokensAsignados);
+
+            // Agregar el usuario al sistema para gestionar la fase
+            sistema.agregarJugador(user);
+
+            userRepository.save(user);
+
+            long tokensEnCirculacion = sistemaConfig.getTokensIniciales() - bovedaCero.getTokens();
+
+            // Mostrar mensaje en consola
+            System.out.println("Usuario " + user.getUsername() + " ha sido creado con " + tokensAsignados + " tokens. Tokens en circulación: " + tokensEnCirculacion + ". Tokens restantes en Bóveda Cero: " + bovedaCero.getTokens());
+
+            String responseMessage = "Usuario creado exitosamente. Tokens en circulación: " + tokensEnCirculacion + ". Tokens restantes en Bóveda Cero: " + bovedaCero.getTokens();
+            return ResponseEntity.ok(responseMessage);
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No hay suficientes tokens disponibles en la Bóveda Cero para asignar.");
+        }
     }
 
     // Actualizar un usuario existente

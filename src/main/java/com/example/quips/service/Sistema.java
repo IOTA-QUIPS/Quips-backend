@@ -1,62 +1,122 @@
 package com.example.quips.service;
 
+import com.example.quips.config.SistemaConfig;
 import com.example.quips.model.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class Sistema {
+
+    private final SistemaConfig sistemaConfig;
     private int faseActual = 1;
-    private int maxJugadoresPorFase = 10;
     private int jugadoresEnFase = 0;
     private int transaccionesEnFase = 0;
+    private final List<User> jugadores = new ArrayList<>(); // Lista para gestionar los jugadores
 
-    public void agregarJugador(User user, List<User> jugadores) {
-        if (jugadoresEnFase < maxJugadoresPorFase) {
+    @Autowired
+    public Sistema(SistemaConfig sistemaConfig) {
+        this.sistemaConfig = sistemaConfig;
+    }
+
+    public int getJugadoresEnFase() {
+        return jugadoresEnFase;
+    }
+
+    public int getTransaccionesEnFase() {
+        return transaccionesEnFase;
+    }
+
+    public int getFaseActual() {
+        return faseActual;
+    }
+
+    // Agregar un nuevo jugador al sistema
+    public void agregarJugador(User user) {
+        System.out.println("Intentando agregar jugador: " + user.getUsername() + ". Jugadores en fase actual: " + jugadoresEnFase);
+
+        // Verificar si se ha alcanzado el límite de jugadores para la fase actual
+        if (jugadoresEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]) {
+            System.out.println("Límite de jugadores alcanzado para Fase " + faseActual + ". Verificando si se puede transicionar de fase...");
+            verificarTransicionDeFase();
+        }
+
+        // Si aún es posible agregar jugadores, agrégalo
+        if (jugadoresEnFase < sistemaConfig.getCuotasPorFase()[faseActual - 1]) {
             jugadores.add(user);
             jugadoresEnFase++;
+            System.out.println("Jugador " + user.getUsername() + " agregado a la Fase " + faseActual + ". Jugadores en fase ahora: " + jugadoresEnFase);
         } else {
-            transicionarFase(jugadores);
+            System.out.println("No se puede agregar más jugadores hasta que se transicione de fase.");
         }
     }
 
-    private void transicionarFase(List<User> jugadores) {
-        faseActual++;
-        jugadoresEnFase = 0;
-        transaccionesEnFase = 0;
-
-        maxJugadoresPorFase = switch (faseActual) {
-            case 2 -> 20;
-            case 3 -> 30;
-            // Agregar más fases según sea necesario
-            default -> 100;
-        };
-
-        distribuirRecompensas(jugadores);
-    }
-
+    // Registrar una nueva transacción
     public void registrarTransaccion() {
         transaccionesEnFase++;
-        if (transaccionesEnFase >= maxJugadoresPorFase) {
-            // Lógica para transicionar fase si se exceden las transacciones permitidas
+        System.out.println("Transacción registrada. Transacciones en fase actual: " + transaccionesEnFase);
+
+        // Verificar si se ha alcanzado el límite de transacciones para la fase actual
+        if (transaccionesEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]) {
+            System.out.println("Límite de transacciones alcanzado para Fase " + faseActual + ". Verificando si se puede transicionar de fase...");
+            verificarTransicionDeFase();
         }
     }
 
-    public void distribuirRecompensas(List<User> jugadores) {
-        jugadores.sort((j1, j2) -> Integer.compare(j2.getCoins(), j1.getCoins()));
+    // Verifica si ambas condiciones para la transición de fase se han cumplido
+    private void verificarTransicionDeFase() {
+        if (jugadoresEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]
+                && transaccionesEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]) {
+            System.out.println("Condiciones cumplidas para transicionar a la siguiente fase.");
+            transicionarFase();
+        } else {
+            System.out.println("Aún no se han cumplido todas las condiciones para la transición. Jugadores: "
+                    + jugadoresEnFase + ", Transacciones: " + transaccionesEnFase);
+        }
+    }
+
+    // Método para gestionar la transición entre fases
+    private void transicionarFase() {
+        // Verificar si se puede avanzar a la siguiente fase
+        if (faseActual < sistemaConfig.getCuotasPorFase().length) {
+            System.out.println("Distribuyendo recompensas para la Fase " + faseActual);
+            distribuirRecompensas();
+
+            // Avanzar a la siguiente fase
+            faseActual++;
+            System.out.println("Transición completada: Ahora en la Fase " + faseActual);
+
+            // Ajustar el contador de jugadores después de la transición
+            jugadoresEnFase = 0;  // Reiniciar el contador de jugadores para la nueva fase
+            System.out.println("Jugadores en fase después de la transición: " + jugadoresEnFase);
+
+            // Reiniciar el contador de transacciones
+            transaccionesEnFase = 0;
+        } else {
+            System.out.println("No hay más fases disponibles.");
+        }
+    }
+
+    // Método para distribuir recompensas a los jugadores más activos
+    private void distribuirRecompensas() {
+        jugadores.sort((j1, j2) -> Integer.compare(j2.getCoins(), j1.getCoins())); // Ordenar por actividad (coins)
 
         if (jugadores.size() >= 3) {
             jugadores.get(0).setCoins(jugadores.get(0).getCoins() + calcularRecompensa(3));
             jugadores.get(1).setCoins(jugadores.get(1).getCoins() + calcularRecompensa(2));
             jugadores.get(2).setCoins(jugadores.get(2).getCoins() + calcularRecompensa(1));
+            System.out.println("Recompensas distribuidas a los jugadores más activos en la Fase " + (faseActual - 1));
+        } else {
+            System.out.println("No hay suficientes jugadores para distribuir recompensas.");
         }
     }
 
-    private int calcularRecompensa(int posicion) {
-        int recompensa = switch (posicion) {
-            case 1 -> 3;
-            case 2 -> 2;
-            case 3 -> 1;
-            default -> 0;
-        };
-        return recompensa;
+    // Método para calcular la recompensa basada en el porcentaje y los tokens emitidos en la fase
+    private int calcularRecompensa(int porcentaje) {
+        int tokensEmitidosEnFase = sistemaConfig.getCuotasPorFase()[faseActual - 1] * sistemaConfig.getTokensPorJugador();
+        return (tokensEmitidosEnFase * porcentaje) / 100;
     }
 }
