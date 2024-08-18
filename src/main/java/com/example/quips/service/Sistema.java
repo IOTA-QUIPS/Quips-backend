@@ -2,6 +2,7 @@ package com.example.quips.service;
 
 import com.example.quips.config.SistemaConfig;
 import com.example.quips.model.User;
+import com.example.quips.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,10 @@ public class Sistema {
     private int jugadoresEnFase = 0;
     private int transaccionesEnFase = 0;
     private final List<User> jugadores = new ArrayList<>(); // Lista para gestionar los jugadores
+
+
+    @Autowired
+    private UserRepository userRepository;  // Asegúrate de que esto esté presente en la clase Sistema
 
     @Autowired
     public Sistema(SistemaConfig sistemaConfig) {
@@ -102,17 +107,28 @@ public class Sistema {
 
     // Método para distribuir recompensas a los jugadores más activos
     private void distribuirRecompensas() {
+        System.out.println("Distribuyendo recompensas...");
         jugadores.sort((j1, j2) -> Double.compare(j2.getCoins(), j1.getCoins())); // Ordenar por actividad (coins)
 
         if (jugadores.size() >= 3) {
             jugadores.get(0).setCoins(jugadores.get(0).getCoins() + calcularRecompensa(3.0));
+            userRepository.save(jugadores.get(0));  // Guardar cambios en la base de datos
+            System.out.println("Recompensa de 3% distribuida a: " + jugadores.get(0).getUsername());
+
             jugadores.get(1).setCoins(jugadores.get(1).getCoins() + calcularRecompensa(2.0));
+            userRepository.save(jugadores.get(1));  // Guardar cambios en la base de datos
+            System.out.println("Recompensa de 2% distribuida a: " + jugadores.get(1).getUsername());
+
             jugadores.get(2).setCoins(jugadores.get(2).getCoins() + calcularRecompensa(1.0));
+            userRepository.save(jugadores.get(2));  // Guardar cambios en la base de datos
+            System.out.println("Recompensa de 1% distribuida a: " + jugadores.get(2).getUsername());
+
             System.out.println("Recompensas distribuidas a los jugadores más activos en la Fase " + (faseActual - 1));
         } else {
             System.out.println("No hay suficientes jugadores para distribuir recompensas.");
         }
     }
+
 
     // Método para calcular la recompensa basada en el porcentaje y los tokens emitidos en la fase
     private double calcularRecompensa(double porcentaje) {
