@@ -7,8 +7,8 @@ import lombok.Setter;
 @Getter
 public class TransactionRequest {
     // Getters y Setters
-    private String senderWalletID;
-    private String receiverWalletID;
+    private Long senderWalletID;
+    private Long receiverWalletID;
     private int amount;
 
 }

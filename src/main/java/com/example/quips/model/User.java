@@ -1,34 +1,21 @@
 package com.example.quips.model;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
 
 @Entity
-@Table(name = "users")  // Cambia el nombre de la tabla a "users"
+@Table(name = "users")
 public class User {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Asegura que el ID sea autogenerado
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String username;
     private String password;
-    private String walletId;
-    private double coins;  // Cambiado a double
 
-    // Constructor vacío
-    public User() {}
-
-    // Constructor completo
-    public User(String username, String password, String walletId, double coins) {
-        this.username = username;
-        this.password = password;
-        this.walletId = walletId;
-        this.coins = coins;
-    }
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "wallet_id", referencedColumnName = "id")
+    @JsonManagedReference
+    private Wallet wallet;
 
     // Getters y Setters
     public Long getId() {
@@ -55,19 +42,11 @@ public class User {
         this.password = password;
     }
 
-    public String getWalletId() {
-        return walletId;
+    public Wallet getWallet() {
+        return wallet;
     }
 
-    public void setWalletId(String walletId) {
-        this.walletId = walletId;
-    }
-
-    public double getCoins() {
-        return coins;
-    }
-
-    public void setCoins(double coins) {
-        this.coins = coins;
+    public void setWallet(Wallet wallet) {
+        this.wallet = wallet;
     }
 }

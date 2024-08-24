@@ -14,17 +14,18 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    private String senderWalletId;
-    private String receiverWalletId;
+    private Long senderWalletId;
+    private Long receiverWalletId;
     private double amount;  // Cambiado a double
     private String previousTransactionHash;
     private String hash;
+    private int fase; // Agregar esta propiedad para almacenar la fase
 
     // Constructor vacío necesario para JPA
     public Transaction() {}
 
     // Constructor
-    public Transaction(String senderWalletId, String receiverWalletId, double amount, String previousTransactionHash) {
+    public Transaction(Long senderWalletId, Long receiverWalletId, double amount, String previousTransactionHash) {
         this.senderWalletId = senderWalletId;
         this.receiverWalletId = receiverWalletId;
         this.amount = amount;
@@ -42,19 +43,19 @@ public class Transaction {
         this.id = id;
     }
 
-    public String getSenderWalletId() {
+    public Long getSenderWalletId() {
         return senderWalletId;
     }
 
-    public void setSenderWalletId(String senderWalletId) {
+    public void setSenderWalletId(Long senderWalletId) {
         this.senderWalletId = senderWalletId;
     }
 
-    public String getReceiverWalletId() {
+    public Long getReceiverWalletId() {
         return receiverWalletId;
     }
 
-    public void setReceiverWalletId(String receiverWalletId) {
+    public void setReceiverWalletId(Long receiverWalletId) {
         this.receiverWalletId = receiverWalletId;
     }
 
@@ -74,6 +75,14 @@ public class Transaction {
         this.previousTransactionHash = previousTransactionHash;
     }
 
+    // Getters y setters para la nueva propiedad
+    public int getFase() {
+        return fase;
+    }
+
+    public void setFase(int fase) {
+        this.fase = fase;
+    }
     public String getHash() {
         return hash;
     }
