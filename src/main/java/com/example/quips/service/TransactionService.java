@@ -2,10 +2,7 @@ package com.example.quips.service;
 
 import com.example.quips.model.DAG;
 import com.example.quips.model.Transaction;
-import com.example.quips.model.User;
-import com.example.quips.model.Wallet;
 import com.example.quips.repository.TransactionRepository;
-import com.example.quips.repository.UserRepository;
 import com.example.quips.repository.WalletRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,73 +14,61 @@ import java.util.Optional;
 @Service
 public class TransactionService {
 
-    @Autowired
-    private TransactionRepository transactionRepository;
+    private final TransactionRepository transactionRepository;
+    private final WalletRepository walletRepository;
+    private final DAG dag;
+    private final SistemaService sistemaService;
 
     @Autowired
-    private UserRepository userRepository;
+    public TransactionService(TransactionRepository transactionRepository, WalletRepository walletRepository, DAG dag, SistemaService sistemaService) {
+        this.transactionRepository = transactionRepository;
+        this.walletRepository = walletRepository;
+        this.dag = dag;
+        this.sistemaService = sistemaService;
 
-    @Autowired
-    private WalletRepository walletRepository;
-
-    @Autowired
-    private DAG dag;
-
-    @Autowired
-    private SistemaService sistemaService;
-
+        // Inicializar el DAG con transacciones existentes
+        initializeDAG();
+    }
 
     @Transactional
     public Transaction createTransaction(Long senderWalletId, Long receiverWalletId, double amount) {
-        int faseActual = sistemaService.getFaseActual();
-
-        // Encontrar el usuario por walletId usando el nuevo método
-        User sender = userRepository.findByWallet_Id(senderWalletId)
+        var senderWallet = walletRepository.findById(senderWalletId)
                 .orElseThrow(() -> new IllegalArgumentException("Sender wallet ID not found"));
-        User receiver = userRepository.findByWallet_Id(receiverWalletId)
+        var receiverWallet = walletRepository.findById(receiverWalletId)
                 .orElseThrow(() -> new IllegalArgumentException("Receiver wallet ID not found"));
-
-        Wallet senderWallet = sender.getWallet();
-        Wallet receiverWallet = receiver.getWallet();
 
         if (senderWallet.getCoins() < amount) {
             throw new IllegalArgumentException("Insufficient funds");
         }
 
-        // Log before transaction processing
-        System.out.println("Processing transaction: Deducting " + amount + " coins from sender. Current balance: " + senderWallet.getCoins());
-
         String previousTransactionHash = findPreviousTransactionHash(senderWalletId);
-
         Transaction transaction = new Transaction(senderWalletId, receiverWalletId, amount, previousTransactionHash);
-        transaction.setFase(faseActual);
+
+        // Agregar la transacción al DAG antes de validarla
+        dag.addTransaction(transaction);
 
         if (!dag.validateTransaction(transaction)) {
             throw new IllegalArgumentException("Transaction validation failed");
         }
 
-        try {
-            senderWallet.setCoins(senderWallet.getCoins() - amount);
-            walletRepository.save(senderWallet);
+        // Transferir coins
+        senderWallet.subtractCoins(amount);
+        receiverWallet.addCoins(amount);
 
-            // Log after deduction
-            System.out.println("After deduction: " + senderWallet.getCoins() + " coins left in sender's wallet.");
+        walletRepository.save(senderWallet);
+        walletRepository.save(receiverWallet);
+        transactionRepository.save(transaction);
 
-            receiverWallet.setCoins(receiverWallet.getCoins() + amount);
-            walletRepository.save(receiverWallet);
+        sistemaService.registrarTransaccion();
 
-            transactionRepository.save(transaction);
-            dag.addTransaction(transaction);
-
-            sistemaService.registrarTransaccion(senderWalletId, receiverWalletId, amount);
-
-            return transaction;
-        } catch (Exception e) {
-            System.err.println("Error during transaction processing: " + e.getMessage());
-            throw new RuntimeException("Transaction failed, rolling back.", e);
-        }
+        return transaction;
     }
 
+    private String findPreviousTransactionHash(Long senderWalletId) {
+        return transactionRepository.findTopBySenderWalletIdOrderByIdDesc(senderWalletId)
+                .map(Transaction::getHash)
+                .orElse("genesis_hash");
+    }
 
     public Optional<Transaction> getTransactionById(Long id) {
         return transactionRepository.findById(id);
@@ -102,9 +87,9 @@ public class TransactionService {
         }
     }
 
-    private String findPreviousTransactionHash(Long senderWalletId) {
-        return transactionRepository.findTopBySenderWalletIdOrderByIdDesc(senderWalletId)
-                .map(Transaction::getHash)
-                .orElse("genesis_hash");
+    // Inicializa el DAG con todas las transacciones existentes en la base de datos
+    private void initializeDAG() {
+        List<Transaction> transactions = transactionRepository.findAll();
+        transactions.forEach(dag::addTransaction);
     }
 }

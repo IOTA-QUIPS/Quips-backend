@@ -16,15 +16,13 @@ public class Transaction {
 
     private Long senderWalletId;
     private Long receiverWalletId;
-    private double amount;  // Cambiado a double
+    private double amount;
     private String previousTransactionHash;
     private String hash;
-    private int fase; // Agregar esta propiedad para almacenar la fase
+    private int fase;
 
-    // Constructor vacío necesario para JPA
     public Transaction() {}
 
-    // Constructor
     public Transaction(Long senderWalletId, Long receiverWalletId, double amount, String previousTransactionHash) {
         this.senderWalletId = senderWalletId;
         this.receiverWalletId = receiverWalletId;
@@ -75,14 +73,6 @@ public class Transaction {
         this.previousTransactionHash = previousTransactionHash;
     }
 
-    // Getters y setters para la nueva propiedad
-    public int getFase() {
-        return fase;
-    }
-
-    public void setFase(int fase) {
-        this.fase = fase;
-    }
     public String getHash() {
         return hash;
     }
@@ -91,7 +81,14 @@ public class Transaction {
         this.hash = hash;
     }
 
-    // Método para calcular el hash de la transacción
+    public int getFase() {
+        return fase;
+    }
+
+    public void setFase(int fase) {
+        this.fase = fase;
+    }
+
     public String calculateHash() {
         String dataToHash = senderWalletId + receiverWalletId + amount + previousTransactionHash;
         MessageDigest digest;

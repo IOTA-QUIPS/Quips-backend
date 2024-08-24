@@ -12,7 +12,7 @@ public class DAG {
 
     public boolean validateTransaction(Transaction transaction) {
         if (transaction.getPreviousTransactionHash().equals("genesis_hash")) {
-            return true; // La primera transacción no requiere validación
+            return true;
         }
 
         if (!transactions.containsKey(transaction.getPreviousTransactionHash())) {

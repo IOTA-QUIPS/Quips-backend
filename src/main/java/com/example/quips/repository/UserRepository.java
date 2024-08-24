@@ -8,6 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    // Buscar usuario por el ID de la wallet
     Optional<User> findByWallet_Id(Long walletId);
 }
