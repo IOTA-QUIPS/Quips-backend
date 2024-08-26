@@ -17,17 +17,18 @@ public class Transaction {
     private Long senderWalletId;
     private Long receiverWalletId;
     private double amount;
-    private String previousTransactionHash;
+    private String previousTransactionHash1;
+    private String previousTransactionHash2;
     private String hash;
-    private int fase;
 
     public Transaction() {}
 
-    public Transaction(Long senderWalletId, Long receiverWalletId, double amount, String previousTransactionHash) {
+    public Transaction(Long senderWalletId, Long receiverWalletId, double amount, String previousTransactionHash1, String previousTransactionHash2) {
         this.senderWalletId = senderWalletId;
         this.receiverWalletId = receiverWalletId;
         this.amount = amount;
-        this.previousTransactionHash = previousTransactionHash;
+        this.previousTransactionHash1 = previousTransactionHash1;
+        this.previousTransactionHash2 = previousTransactionHash2;
         this.hash = calculateHash();
     }
 
@@ -65,12 +66,20 @@ public class Transaction {
         this.amount = amount;
     }
 
-    public String getPreviousTransactionHash() {
-        return previousTransactionHash;
+    public String getPreviousTransactionHash1() {
+        return previousTransactionHash1;
     }
 
-    public void setPreviousTransactionHash(String previousTransactionHash) {
-        this.previousTransactionHash = previousTransactionHash;
+    public void setPreviousTransactionHash1(String previousTransactionHash1) {
+        this.previousTransactionHash1 = previousTransactionHash1;
+    }
+
+    public String getPreviousTransactionHash2() {
+        return previousTransactionHash2;
+    }
+
+    public void setPreviousTransactionHash2(String previousTransactionHash2) {
+        this.previousTransactionHash2 = previousTransactionHash2;
     }
 
     public String getHash() {
@@ -81,16 +90,8 @@ public class Transaction {
         this.hash = hash;
     }
 
-    public int getFase() {
-        return fase;
-    }
-
-    public void setFase(int fase) {
-        this.fase = fase;
-    }
-
     public String calculateHash() {
-        String dataToHash = senderWalletId + receiverWalletId + amount + previousTransactionHash;
+        String dataToHash = senderWalletId + receiverWalletId + amount + previousTransactionHash1 + previousTransactionHash2;
         MessageDigest digest;
         String encoded = null;
         try {

@@ -41,33 +41,58 @@ public class TransactionService {
             throw new IllegalArgumentException("Insufficient funds");
         }
 
-        String previousTransactionHash = findPreviousTransactionHash(senderWalletId);
-        Transaction transaction = new Transaction(senderWalletId, receiverWalletId, amount, previousTransactionHash);
+        // Buscar las dos transacciones anteriores más recientes
+        String[] previousTransactionHashes = findPreviousTransactionHashes();
+
+        // Validar que los hashes no sean nulos o estén vacíos
+        if (previousTransactionHashes == null || previousTransactionHashes.length != 2
+                || previousTransactionHashes[0] == null || previousTransactionHashes[1] == null) {
+            throw new IllegalStateException("Error retrieving previous transaction hashes");
+        }
+
+        System.out.println("Hash 1: " + previousTransactionHashes[0]);
+        System.out.println("Hash 2: " + previousTransactionHashes[1]);
+
+        Transaction transaction = new Transaction(senderWalletId, receiverWalletId, amount, previousTransactionHashes[0], previousTransactionHashes[1]);
 
         // Agregar la transacción al DAG antes de validarla
         dag.addTransaction(transaction);
 
+        // Validar la transacción
         if (!dag.validateTransaction(transaction)) {
             throw new IllegalArgumentException("Transaction validation failed");
         }
 
-        // Transferir coins
+        // Transferir monedas
         senderWallet.subtractCoins(amount);
         receiverWallet.addCoins(amount);
 
+        // Guardar en los repositorios
         walletRepository.save(senderWallet);
         walletRepository.save(receiverWallet);
         transactionRepository.save(transaction);
 
+        // Registrar la transacción en el sistema
         sistemaService.registrarTransaccion();
 
         return transaction;
     }
 
-    private String findPreviousTransactionHash(Long senderWalletId) {
-        return transactionRepository.findTopBySenderWalletIdOrderByIdDesc(senderWalletId)
-                .map(Transaction::getHash)
-                .orElse("genesis_hash");
+    private String[] findPreviousTransactionHashes() {
+        List<Transaction> previousTransactions = transactionRepository.findTop2ByOrderByIdDesc();
+
+        String hash1 = "genesis_hash1";
+        String hash2 = "genesis_hash2";
+
+        if (!previousTransactions.isEmpty()) {
+            hash1 = previousTransactions.get(0).getHash();
+            if (previousTransactions.size() > 1) {
+                hash2 = previousTransactions.get(1).getHash();
+            }
+        }
+
+        // Asegurarse de que siempre se devuelvan dos hashes válidos
+        return new String[]{hash1, hash2};
     }
 
     public Optional<Transaction> getTransactionById(Long id) {
@@ -91,5 +116,6 @@ public class TransactionService {
     private void initializeDAG() {
         List<Transaction> transactions = transactionRepository.findAll();
         transactions.forEach(dag::addTransaction);
+        System.out.println("DAG inicializado con " + transactions.size() + " transacciones.");
     }
 }
