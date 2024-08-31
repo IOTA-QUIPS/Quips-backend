@@ -40,20 +40,4 @@ public class Wallet {
     public void setUser(User user) {
         this.user = user;
     }
-
-    // Método para añadir monedas
-    public void addCoins(double amount) {
-        if (amount > 0) {
-            this.coins += amount;
-        }
-    }
-
-    // Método para restar monedas
-    public void subtractCoins(double amount) {
-        if (amount > 0 && this.coins >= amount) {
-            this.coins -= amount;
-        } else {
-            throw new IllegalArgumentException("Saldo insuficiente o cantidad inválida");
-        }
-    }
 }

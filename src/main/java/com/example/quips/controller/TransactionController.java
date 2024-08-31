@@ -2,6 +2,7 @@ package com.example.quips.controller;
 
 import com.example.quips.dto.TransactionRequest;
 import com.example.quips.model.Transaction;
+import com.example.quips.service.CoordinatorService;
 import com.example.quips.service.TransactionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,11 @@ import java.util.List;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final CoordinatorService coordinatorService;  // Inyección del CoordinatorService
 
-    public TransactionController(TransactionService transactionService) {
+    public TransactionController(TransactionService transactionService, CoordinatorService coordinatorService) {
         this.transactionService = transactionService;
+        this.coordinatorService = coordinatorService;
     }
 
     @PostMapping
@@ -27,6 +30,10 @@ public class TransactionController {
                 request.getReceiverWalletID(),
                 request.getAmount()
         );
+
+        // Verificar y procesar la transición de fase después de crear la transacción
+        coordinatorService.processTransition();
+
         return ResponseEntity.ok(transaction);
     }
 

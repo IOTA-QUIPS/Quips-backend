@@ -2,6 +2,7 @@ package com.example.quips.service;
 
 import com.example.quips.config.SistemaConfig;
 import com.example.quips.model.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -29,10 +30,6 @@ public class SistemaService {
     }
 
     public void agregarJugador(User user) {
-        if (jugadoresEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]) {
-            verificarTransicionDeFase();
-        }
-
         if (jugadoresEnFase < sistemaConfig.getCuotasPorFase()[faseActual - 1]) {
             jugadores.add(user);
             jugadoresEnFase++;
@@ -41,24 +38,25 @@ public class SistemaService {
 
     public void registrarTransaccion() {
         transaccionesEnFase++;
-
-        if (transaccionesEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]) {
-            verificarTransicionDeFase();
-        }
     }
 
-    private void verificarTransicionDeFase() {
-        if (jugadoresEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]
-                && transaccionesEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]) {
-            transicionarFase();
-        }
+    public boolean debeTransicionar() {
+        return jugadoresEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1]
+                && transaccionesEnFase >= sistemaConfig.getCuotasPorFase()[faseActual - 1];
     }
 
-    private void transicionarFase() {
+    public void transicionarFase() {
         if (faseActual < sistemaConfig.getCuotasPorFase().length) {
             faseActual++;
             jugadoresEnFase = 0;
             transaccionesEnFase = 0;
+            // No limpiar la lista de jugadores, a menos que esté seguro de que estos datos no son necesarios en la próxima fase.
+            // jugadores.clear();  -> Esto puede ser opcional dependiendo de la implementación y si necesitas mantener los datos de la fase anterior.
         }
     }
+
+    public List<User> getJugadores() {
+        return new ArrayList<>(jugadores);
+    }
 }
+

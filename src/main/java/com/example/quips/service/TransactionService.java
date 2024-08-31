@@ -2,6 +2,7 @@ package com.example.quips.service;
 
 import com.example.quips.model.DAG;
 import com.example.quips.model.Transaction;
+import com.example.quips.model.Wallet;
 import com.example.quips.repository.TransactionRepository;
 import com.example.quips.repository.WalletRepository;
 import jakarta.transaction.Transactional;
@@ -18,13 +19,15 @@ public class TransactionService {
     private final WalletRepository walletRepository;
     private final DAG dag;
     private final SistemaService sistemaService;
+    private final WalletService walletService;  // Añadir WalletService
 
     @Autowired
-    public TransactionService(TransactionRepository transactionRepository, WalletRepository walletRepository, DAG dag, SistemaService sistemaService) {
+    public TransactionService(TransactionRepository transactionRepository, WalletRepository walletRepository, DAG dag, SistemaService sistemaService, WalletService walletService) {
         this.transactionRepository = transactionRepository;
         this.walletRepository = walletRepository;
         this.dag = dag;
         this.sistemaService = sistemaService;
+        this.walletService = walletService;  // Inyectar WalletService
 
         // Inicializar el DAG con transacciones existentes
         initializeDAG();
@@ -32,16 +35,18 @@ public class TransactionService {
 
     @Transactional
     public Transaction createTransaction(Long senderWalletId, Long receiverWalletId, double amount) {
-        var senderWallet = walletRepository.findById(senderWalletId)
+        // Obtener las wallets involucradas en la transacción
+        Wallet senderWallet = walletRepository.findById(senderWalletId)
                 .orElseThrow(() -> new IllegalArgumentException("Sender wallet ID not found"));
-        var receiverWallet = walletRepository.findById(receiverWalletId)
+        Wallet receiverWallet = walletRepository.findById(receiverWalletId)
                 .orElseThrow(() -> new IllegalArgumentException("Receiver wallet ID not found"));
 
+        // Verificar que la wallet del remitente tenga fondos suficientes
         if (senderWallet.getCoins() < amount) {
             throw new IllegalArgumentException("Insufficient funds");
         }
 
-        // Buscar las dos transacciones anteriores más recientes
+        // Buscar los hashes de las dos transacciones anteriores más recientes
         String[] previousTransactionHashes = findPreviousTransactionHashes();
 
         // Validar que los hashes no sean nulos o estén vacíos
@@ -50,10 +55,12 @@ public class TransactionService {
             throw new IllegalStateException("Error retrieving previous transaction hashes");
         }
 
-        System.out.println("Hash 1: " + previousTransactionHashes[0]);
-        System.out.println("Hash 2: " + previousTransactionHashes[1]);
+        // Obtener la fase actual
+        int faseActual = sistemaService.getFaseActual();
 
-        Transaction transaction = new Transaction(senderWalletId, receiverWalletId, amount, previousTransactionHashes[0], previousTransactionHashes[1]);
+        // Crear la nueva transacción
+        Transaction transaction = new Transaction(senderWalletId, receiverWalletId, amount,
+                previousTransactionHashes[0], previousTransactionHashes[1], faseActual);
 
         // Agregar la transacción al DAG antes de validarla
         dag.addTransaction(transaction);
@@ -63,27 +70,30 @@ public class TransactionService {
             throw new IllegalArgumentException("Transaction validation failed");
         }
 
-        // Transferir monedas
-        senderWallet.subtractCoins(amount);
-        receiverWallet.addCoins(amount);
+        // Realizar la transferencia de monedas utilizando WalletService
+        walletService.subtractCoins(senderWallet, amount);
+        walletService.addCoins(receiverWallet, amount);
 
-        // Guardar en los repositorios
-        walletRepository.save(senderWallet);
-        walletRepository.save(receiverWallet);
+        // Guardar la transacción en el repositorio
         transactionRepository.save(transaction);
 
         // Registrar la transacción en el sistema
         sistemaService.registrarTransaccion();
 
+
+
         return transaction;
     }
 
     private String[] findPreviousTransactionHashes() {
+        // Obtener las dos transacciones más recientes
         List<Transaction> previousTransactions = transactionRepository.findTop2ByOrderByIdDesc();
 
+        // Definir los hashes de génesis por defecto
         String hash1 = "genesis_hash1";
         String hash2 = "genesis_hash2";
 
+        // Si hay transacciones previas, actualizar los hashes
         if (!previousTransactions.isEmpty()) {
             hash1 = previousTransactions.get(0).getHash();
             if (previousTransactions.size() > 1) {
@@ -91,7 +101,7 @@ public class TransactionService {
             }
         }
 
-        // Asegurarse de que siempre se devuelvan dos hashes válidos
+        // Retornar siempre dos hashes válidos
         return new String[]{hash1, hash2};
     }
 

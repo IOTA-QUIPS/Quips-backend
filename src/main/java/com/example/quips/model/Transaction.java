@@ -21,15 +21,18 @@ public class Transaction {
     private String previousTransactionHash2;
     private String hash;
 
+    private int fase; // Nuevo campo fase
+
     public Transaction() {}
 
-    public Transaction(Long senderWalletId, Long receiverWalletId, double amount, String previousTransactionHash1, String previousTransactionHash2) {
+    public Transaction(Long senderWalletId, Long receiverWalletId, double amount, String previousTransactionHash1, String previousTransactionHash2, int fase) {
         this.senderWalletId = senderWalletId;
         this.receiverWalletId = receiverWalletId;
         this.amount = amount;
         this.previousTransactionHash1 = previousTransactionHash1;
         this.previousTransactionHash2 = previousTransactionHash2;
         this.hash = calculateHash();
+        this.fase = fase;
     }
 
     // Getters y Setters
@@ -88,6 +91,15 @@ public class Transaction {
 
     public void setHash(String hash) {
         this.hash = hash;
+    }
+
+    // Getters y Setters, incluyendo el nuevo campo fase
+    public int getFase() {
+        return fase;
+    }
+
+    public void setFase(int fase) {
+        this.fase = fase;
     }
 
     public String calculateHash() {
