@@ -43,6 +43,31 @@ public class UserController {
         return userRepository.findAll();
     }
 
+
+
+    // Endpoint de login
+    @PostMapping("/login")
+    public ResponseEntity<String> loginUser(@RequestBody CreateUserRequest request) {
+        // Buscar el usuario por su nombre de usuario
+        Optional<User> userOptional = userRepository.findByUsername(request.getUsername());
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+
+            // Comparar contraseñas (recuerda usar un hash seguro en producción)
+            if (user.getPassword().equals(request.getPassword())) {
+                // Aquí podrías generar y devolver un token JWT u otro mecanismo de autenticación
+                return ResponseEntity.ok("Login exitoso.");
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta.");
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+        }
+    }
+
+
+
     // Obtener un usuario por su ID
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {

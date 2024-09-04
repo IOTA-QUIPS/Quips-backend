@@ -9,4 +9,7 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByWallet_Id(Long walletId);
+
+    // Método para buscar usuario por nombre de usuario (username)
+    Optional<User> findByUsername(String username);
 }
