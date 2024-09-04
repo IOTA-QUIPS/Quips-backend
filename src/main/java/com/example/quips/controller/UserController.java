@@ -2,6 +2,7 @@ package com.example.quips.controller;
 
 import com.example.quips.config.SistemaConfig;
 import com.example.quips.dto.CreateUserRequest;
+import com.example.quips.dto.LoginRequest;
 import com.example.quips.model.BovedaCero;
 import com.example.quips.model.User;
 import com.example.quips.model.Wallet;
@@ -44,10 +45,11 @@ public class UserController {
     }
 
 
-    @CrossOrigin(origins = "*") // O especifica el origen permitido
+
     // Endpoint de login
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody CreateUserRequest request) {
+    public ResponseEntity<String> loginUser(@RequestBody LoginRequest request) {
         // Buscar el usuario por su nombre de usuario
         Optional<User> userOptional = userRepository.findByUsername(request.getUsername());
 
@@ -76,6 +78,7 @@ public class UserController {
     }
 
     // Crear un nuevo usuario
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
     @PostMapping
     public ResponseEntity<String> createUser(@RequestBody CreateUserRequest request) {
         // Verificar si se ha alcanzado el límite de jugadores para la fase actual
@@ -98,7 +101,10 @@ public class UserController {
 
             User user = new User();
             user.setUsername(request.getUsername());
-            user.setPassword(request.getPassword()); // Asegúrate de cifrar la contraseña en un entorno real
+            user.setPassword(request.getPassword());
+            user.setFirstName(request.getFirstName()); // Nuevo campo
+            user.setLastName(request.getLastName());
+            // Asegúrate de cifrar la contraseña en un entorno real
             user.setWallet(wallet);
 
             bovedaCero.restarTokens(tokensAsignados);
@@ -129,7 +135,11 @@ public class UserController {
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             user.setUsername(userDetails.getUsername());
-            user.setPassword(userDetails.getPassword()); // Recuerda cifrar la contraseña en un entorno real
+            user.setPassword(userDetails.getPassword());
+            user.setFirstName(userDetails.getFirstName()); // Nuevo campo
+            user.setLastName(userDetails.getLastName());
+
+            // Recuerda cifrar la contraseña en un entorno real
 
             Wallet wallet = user.getWallet();
             wallet.setCoins(userDetails.getWallet().getCoins());
