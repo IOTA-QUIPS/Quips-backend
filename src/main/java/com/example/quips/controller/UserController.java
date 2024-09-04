@@ -44,7 +44,7 @@ public class UserController {
     }
 
 
-
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
     // Endpoint de login
     @PostMapping("/login")
     public ResponseEntity<String> loginUser(@RequestBody CreateUserRequest request) {
