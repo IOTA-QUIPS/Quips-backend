@@ -3,6 +3,8 @@ package com.example.quips.model;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -13,12 +15,32 @@ public class User {
     private String username;
     private String password;
 
+    // Nuevos campos para nombre y apellido
+    private String firstName;
+    private String lastName;
+
+    @Column(unique = true, nullable = false)
+    private String accountNumber;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "wallet_id", referencedColumnName = "id")
     @JsonManagedReference
     private Wallet wallet;
 
     // Getters y Setters
+
+    public User() {
+        this.accountNumber = UUID.randomUUID().toString();  // Generar un número de cuenta único al crear el usuario
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
     public Long getId() {
         return id;
     }
@@ -41,6 +63,22 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public Wallet getWallet() {

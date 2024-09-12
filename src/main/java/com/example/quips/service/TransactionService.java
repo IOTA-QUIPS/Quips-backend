@@ -19,7 +19,7 @@ public class TransactionService {
     private final WalletRepository walletRepository;
     private final DAG dag;
     private final SistemaService sistemaService;
-    private final WalletService walletService;  // Añadir WalletService
+    private final WalletService walletService;
 
     @Autowired
     public TransactionService(TransactionRepository transactionRepository, WalletRepository walletRepository, DAG dag, SistemaService sistemaService, WalletService walletService) {
@@ -27,7 +27,7 @@ public class TransactionService {
         this.walletRepository = walletRepository;
         this.dag = dag;
         this.sistemaService = sistemaService;
-        this.walletService = walletService;  // Inyectar WalletService
+        this.walletService = walletService;
 
         // Inicializar el DAG con transacciones existentes
         initializeDAG();
@@ -49,13 +49,12 @@ public class TransactionService {
         // Buscar los hashes de las dos transacciones anteriores más recientes
         String[] previousTransactionHashes = findPreviousTransactionHashes();
 
-        // Validar que los hashes no sean nulos o estén vacíos
-        if (previousTransactionHashes == null || previousTransactionHashes.length != 2
-                || previousTransactionHashes[0] == null || previousTransactionHashes[1] == null) {
+        // Validar los hashes
+        if (previousTransactionHashes.length != 2 || previousTransactionHashes[0] == null || previousTransactionHashes[1] == null) {
             throw new IllegalStateException("Error retrieving previous transaction hashes");
         }
 
-        // Obtener la fase actual
+        // Obtener la fase actual del sistema
         int faseActual = sistemaService.getFaseActual();
 
         // Crear la nueva transacción
@@ -70,17 +69,15 @@ public class TransactionService {
             throw new IllegalArgumentException("Transaction validation failed");
         }
 
-        // Realizar la transferencia de monedas utilizando WalletService
+        // Realizar la transferencia de monedas
         walletService.subtractCoins(senderWallet, amount);
         walletService.addCoins(receiverWallet, amount);
 
-        // Guardar la transacción en el repositorio
+        // Guardar la transacción
         transactionRepository.save(transaction);
 
         // Registrar la transacción en el sistema
         sistemaService.registrarTransaccion();
-
-
 
         return transaction;
     }
@@ -89,11 +86,11 @@ public class TransactionService {
         // Obtener las dos transacciones más recientes
         List<Transaction> previousTransactions = transactionRepository.findTop2ByOrderByIdDesc();
 
-        // Definir los hashes de génesis por defecto
+        // Definir los hashes génesis por defecto
         String hash1 = "genesis_hash1";
         String hash2 = "genesis_hash2";
 
-        // Si hay transacciones previas, actualizar los hashes
+        // Actualizar los hashes si hay transacciones anteriores
         if (!previousTransactions.isEmpty()) {
             hash1 = previousTransactions.get(0).getHash();
             if (previousTransactions.size() > 1) {
@@ -101,7 +98,6 @@ public class TransactionService {
             }
         }
 
-        // Retornar siempre dos hashes válidos
         return new String[]{hash1, hash2};
     }
 
@@ -122,7 +118,6 @@ public class TransactionService {
         }
     }
 
-    // Inicializa el DAG con todas las transacciones existentes en la base de datos
     private void initializeDAG() {
         List<Transaction> transactions = transactionRepository.findAll();
         transactions.forEach(dag::addTransaction);

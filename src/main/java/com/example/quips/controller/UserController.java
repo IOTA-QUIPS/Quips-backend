@@ -2,12 +2,14 @@ package com.example.quips.controller;
 
 import com.example.quips.config.SistemaConfig;
 import com.example.quips.dto.CreateUserRequest;
+import com.example.quips.dto.LoginRequest;
 import com.example.quips.model.BovedaCero;
 import com.example.quips.model.User;
 import com.example.quips.model.Wallet;
 import com.example.quips.repository.UserRepository;
 import com.example.quips.repository.WalletRepository;
 import com.example.quips.service.SistemaService;
+import com.example.quips.util.JwtUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -24,6 +27,9 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Autowired
     private WalletRepository walletRepository; // Inyectar WalletRepository
@@ -43,6 +49,55 @@ public class UserController {
         return userRepository.findAll();
     }
 
+
+
+    // Endpoint de login
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest request) {
+        Optional<User> userOptional = userRepository.findByUsername(request.getUsername());
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+
+            // Comparar contraseñas (recomendable usar hash en producción)
+            if (user.getPassword().equals(request.getPassword())) {
+                // Generar el token (suponiendo que tienes una clase JwtUtil para manejar JWT)
+                String token = jwtUtil.generateToken(user.getUsername());
+
+                // Devolver el token en la respuesta
+                return ResponseEntity.ok(Map.of("token", token));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta.");
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+        }
+    }
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyUserInfo(@RequestHeader("Authorization") String token) {
+        try {
+            // Extraer el nombre de usuario del token
+            String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+
+            // Buscar al usuario por nombre de usuario
+            Optional<User> user = userRepository.findByUsername(username);
+
+            // Retornar los datos del usuario si es encontrado
+            if (user.isPresent()) {
+                return ResponseEntity.ok(user.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+            }
+        } catch (Exception e) {
+            // Manejar cualquier excepción relacionada con el token JWT
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token no válido o expirado.");
+        }
+    }
+
+
+
     // Obtener un usuario por su ID
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
@@ -51,6 +106,7 @@ public class UserController {
     }
 
     // Crear un nuevo usuario
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
     @PostMapping
     public ResponseEntity<String> createUser(@RequestBody CreateUserRequest request) {
         // Verificar si se ha alcanzado el límite de jugadores para la fase actual
@@ -73,7 +129,10 @@ public class UserController {
 
             User user = new User();
             user.setUsername(request.getUsername());
-            user.setPassword(request.getPassword()); // Asegúrate de cifrar la contraseña en un entorno real
+            user.setPassword(request.getPassword());
+            user.setFirstName(request.getFirstName()); // Nuevo campo
+            user.setLastName(request.getLastName());
+            // Asegúrate de cifrar la contraseña en un entorno real
             user.setWallet(wallet);
 
             bovedaCero.restarTokens(tokensAsignados);
@@ -104,7 +163,11 @@ public class UserController {
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             user.setUsername(userDetails.getUsername());
-            user.setPassword(userDetails.getPassword()); // Recuerda cifrar la contraseña en un entorno real
+            user.setPassword(userDetails.getPassword());
+            user.setFirstName(userDetails.getFirstName()); // Nuevo campo
+            user.setLastName(userDetails.getLastName());
+
+            // Recuerda cifrar la contraseña en un entorno real
 
             Wallet wallet = user.getWallet();
             wallet.setCoins(userDetails.getWallet().getCoins());
