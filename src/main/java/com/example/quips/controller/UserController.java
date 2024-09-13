@@ -3,9 +3,8 @@ package com.example.quips.controller;
 import com.example.quips.config.SistemaConfig;
 import com.example.quips.dto.CreateUserRequest;
 import com.example.quips.dto.LoginRequest;
-import com.example.quips.model.BovedaCero;
-import com.example.quips.model.User;
-import com.example.quips.model.Wallet;
+import com.example.quips.model.*;
+import com.example.quips.repository.RoleRepository;
 import com.example.quips.repository.UserRepository;
 import com.example.quips.repository.WalletRepository;
 import com.example.quips.service.SistemaService;
@@ -33,6 +32,9 @@ public class UserController {
 
     @Autowired
     private WalletRepository walletRepository; // Inyectar WalletRepository
+
+    @Autowired
+    private RoleRepository roleRepository; // Inyectar RoleRepository
 
     @Autowired
     private SistemaConfig sistemaConfig;  // Inyección de SistemaConfig
@@ -109,7 +111,6 @@ public class UserController {
     @CrossOrigin(origins = "*") // O especifica el origen permitido
     @PostMapping
     public ResponseEntity<String> createUser(@RequestBody CreateUserRequest request) {
-        // Verificar si se ha alcanzado el límite de jugadores para la fase actual
         int jugadoresEnFase = sistema.getJugadoresEnFase();
         int cuotaFaseActual = sistemaConfig.getCuotasPorFase()[sistema.getFaseActual() - 1];
 
@@ -118,43 +119,86 @@ public class UserController {
                     .body("No se puede agregar más jugadores hasta que se transicione de fase.");
         }
 
-        // Proceder con la creación del usuario
         int tokensAsignados = sistemaConfig.getTokensPorJugador();
         long tokensDisponibles = bovedaCero.getTokens();
 
         if (tokensDisponibles >= tokensAsignados) {
-            // Crear el usuario y su wallet asociada
             Wallet wallet = new Wallet();
             wallet.setCoins(tokensAsignados);
 
             User user = new User();
             user.setUsername(request.getUsername());
             user.setPassword(request.getPassword());
-            user.setFirstName(request.getFirstName()); // Nuevo campo
+            user.setFirstName(request.getFirstName());
             user.setLastName(request.getLastName());
-            // Asegúrate de cifrar la contraseña en un entorno real
             user.setWallet(wallet);
 
             bovedaCero.restarTokens(tokensAsignados);
-
-            // Agregar el usuario al sistema para gestionar la fase
             sistema.agregarJugador(user);
 
-            // Guardar la wallet y luego el usuario
+            // Asignar el rol USER por defecto
+            Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                    .orElseThrow(() -> new RuntimeException("Error: Rol USER no encontrado."));
+            user.getRoles().add(userRole);
+
             walletRepository.save(wallet);
             userRepository.save(user);
 
             long tokensEnCirculacion = sistemaConfig.getTokensIniciales() - bovedaCero.getTokens();
+            System.out.println("Usuario " + user.getUsername() + " ha sido creado con " + tokensAsignados + " tokens.");
 
-            // Mostrar mensaje en consola
-            System.out.println("Usuario " + user.getUsername() + " ha sido creado con " + tokensAsignados + " tokens. Tokens en circulación: " + tokensEnCirculacion + ". Tokens restantes en Bóveda Cero: " + bovedaCero.getTokens());
-
-            String responseMessage = "Usuario creado exitosamente. Tokens en circulación: " + tokensEnCirculacion + ". Tokens restantes en Bóveda Cero: " + bovedaCero.getTokens();
+            String responseMessage = "Usuario creado exitosamente. Tokens en circulación: " + tokensEnCirculacion;
             return ResponseEntity.ok(responseMessage);
         } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No hay suficientes tokens disponibles en la Bóveda Cero para asignar.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No hay suficientes tokens disponibles.");
         }
     }
+
+    @PutMapping("/admin/{id}")
+    public ResponseEntity<?> makeAdmin(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+
+        // Verificar que el usuario autenticado es administrador
+        User requester = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        boolean isAdmin = requester.getRoles().stream()
+                .anyMatch(role -> role.getName().equals(ERole.ROLE_ADMIN));
+
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para hacer esto.");
+        }
+
+        // Asignar el rol ADMIN al usuario especificado
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                .orElseThrow(() -> new RuntimeException("Error: Rol ADMIN no encontrado."));
+        user.getRoles().add(adminRole);
+
+        userRepository.save(user);
+        return ResponseEntity.ok("El usuario ha sido promovido a ADMIN.");
+    }
+
+    @GetMapping("/admin/overview")
+    public ResponseEntity<?> getAdminOverview(@RequestHeader("Authorization") String token) {
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+
+        // Verificar que el usuario tiene el rol ADMIN
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(role -> role.getName().equals(ERole.ROLE_ADMIN));
+
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para acceder a esta información.");
+        }
+
+        // Lógica para mostrar el "overview" para administradores
+        return ResponseEntity.ok("Datos del administrador");
+    }
+
 
     // Actualizar un usuario existente
     @PutMapping("/{id}")

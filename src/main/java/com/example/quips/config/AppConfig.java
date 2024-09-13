@@ -2,6 +2,10 @@ package com.example.quips.config;
 
 import com.example.quips.model.BovedaCero;
 import com.example.quips.model.DAG;
+import com.example.quips.model.ERole;
+import com.example.quips.model.Role;
+import com.example.quips.repository.RoleRepository;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,4 +21,5 @@ public class AppConfig {
     public DAG dag() {
         return new DAG();
     }
+
 }
