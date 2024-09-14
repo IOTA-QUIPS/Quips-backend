@@ -31,16 +31,25 @@ public class ChatService {
         User user2 = userRepository.findById(user2Id)
                 .orElseThrow(() -> new IllegalArgumentException("User 2 not found"));
 
-        Optional<Conversation> conversationOptional = conversationRepository.findByUser1AndUser2(user1, user2);
+        // Agrega un log para verificar el ID de los usuarios
+        System.out.println("Buscando conversación entre: " + user1.getId() + " y " + user2.getId());
+
+        Optional<Conversation> conversationOptional = conversationRepository.findByUser1AndUser2OrUser1AndUser2(user1, user2, user2, user1);
+
         if (conversationOptional.isPresent()) {
+            System.out.println("Conversación encontrada con ID: " + conversationOptional.get().getId());
             return conversationOptional.get();
+        } else {
+            System.out.println("No se encontró conversación. Creando una nueva.");
         }
 
+        // Si no existe la conversación, crear una nueva
         Conversation conversation = new Conversation();
         conversation.setUser1(user1);
         conversation.setUser2(user2);
         return conversationRepository.save(conversation);
     }
+
 
     public Message sendMessage(Long senderId, Long receiverId, String content, Long conversationId) {
         User sender = userRepository.findById(senderId)
@@ -48,12 +57,20 @@ public class ChatService {
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new IllegalArgumentException("Receiver not found"));
 
-        Conversation conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
+        Conversation conversation;
+
+        // Si el conversationId es null, intenta obtener o crear una conversación
+        if (conversationId == null) {
+            conversation = getOrCreateConversation(senderId, receiverId);
+        } else {
+            conversation = conversationRepository.findById(conversationId)
+                    .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
+        }
 
         Message message = new Message();
         message.setSender(sender);
         message.setReceiver(receiver);
+        message.setConversation(conversation);  // Asegurarse de que se establece la conversación correcta
         message.setContent(content);
         message.setTimestamp(LocalDateTime.now());
 

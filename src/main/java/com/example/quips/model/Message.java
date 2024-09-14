@@ -3,6 +3,8 @@ package com.example.quips.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "messages")
 public class Message {
@@ -13,6 +15,7 @@ public class Message {
 
     @ManyToOne
     @JoinColumn(name = "conversation_id")  // Aquí establecemos la relación con la entidad Conversation
+    @JsonIgnore // Evita la recursión en la serialización de JSON
     private Conversation conversation;
 
     @ManyToOne

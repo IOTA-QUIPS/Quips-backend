@@ -3,6 +3,9 @@ package com.example.quips.model;
 import jakarta.persistence.*;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 @Table(name = "conversations")
 public class Conversation {
@@ -20,6 +23,7 @@ public class Conversation {
     private User user2;
 
     @OneToMany(mappedBy = "conversation")  // El 'mappedBy' debe coincidir con el nombre de la propiedad en Message
+    @JsonManagedReference
     private List<Message> messages;
 
     // Getters y Setters

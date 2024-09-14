@@ -1,5 +1,6 @@
 package com.example.quips.controller;
 
+import com.example.quips.dto.SendMessageRequest;
 import com.example.quips.model.Conversation;
 import com.example.quips.model.Message;
 import com.example.quips.service.ChatService;
@@ -17,6 +18,7 @@ public class ChatController {
     private ChatService chatService;
 
     // Crear o obtener una conversación
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
     @PostMapping("/conversation")
     public ResponseEntity<Conversation> createOrGetConversation(@RequestParam Long user1Id, @RequestParam Long user2Id) {
         Conversation conversation = chatService.getOrCreateConversation(user1Id, user2Id);
@@ -24,17 +26,15 @@ public class ChatController {
     }
 
     // Enviar un mensaje
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
     @PostMapping("/sendMessage")
-    public ResponseEntity<Message> sendMessage(
-            @RequestParam Long senderId,
-            @RequestParam Long receiverId,
-            @RequestParam String content,
-            @RequestParam Long conversationId) {
-        Message message = chatService.sendMessage(senderId, receiverId, content, conversationId);
+    public ResponseEntity<Message> sendMessage(@RequestBody SendMessageRequest request) {  // Cambia a @RequestBody
+        Message message = chatService.sendMessage(request.getSenderId(), request.getReceiverId(), request.getContent(), request.getConversationId());
         return ResponseEntity.ok(message);
     }
 
     // Obtener todos los mensajes de una conversación
+    @CrossOrigin(origins = "*") // O especifica el origen permitido
     @GetMapping("/conversation/{conversationId}/messages")
     public ResponseEntity<List<Message>> getConversationMessages(@PathVariable Long conversationId) {
         List<Message> messages = chatService.getConversationMessages(conversationId);
