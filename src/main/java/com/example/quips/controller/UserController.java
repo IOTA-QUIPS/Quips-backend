@@ -131,6 +131,8 @@ public class UserController {
             user.setPassword(request.getPassword());
             user.setFirstName(request.getFirstName());
             user.setLastName(request.getLastName());
+            user.setEmail(request.getEmail());           // Establece el email
+            user.setPhoneNumber(request.getPhoneNumber()); // Establece el número de celular
             user.setWallet(wallet);
 
             bovedaCero.restarTokens(tokensAsignados);
@@ -210,6 +212,8 @@ public class UserController {
             user.setPassword(userDetails.getPassword());
             user.setFirstName(userDetails.getFirstName()); // Nuevo campo
             user.setLastName(userDetails.getLastName());
+            user.setEmail(userDetails.getEmail());             // Actualiza el email
+            user.setPhoneNumber(userDetails.getPhoneNumber()); // Actualiza el número de celular
 
             // Recuerda cifrar la contraseña en un entorno real
 

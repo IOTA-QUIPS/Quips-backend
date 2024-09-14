@@ -21,6 +21,9 @@ public class User {
     private String firstName;
     private String lastName;
 
+    private String email;
+    private String phoneNumber;
+
     @Column(unique = true, nullable = false)
     private String accountNumber;
 
@@ -53,6 +56,23 @@ public class User {
         this.accountNumber = UUID.randomUUID().toString();  // Generar un número de cuenta único al crear el usuario
     }
 
+
+    // Getters y Setters para los nuevos campos
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
     public String getAccountNumber() {
         return accountNumber;
     }
