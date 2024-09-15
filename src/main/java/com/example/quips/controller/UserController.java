@@ -3,6 +3,7 @@ package com.example.quips.controller;
 import com.example.quips.config.SistemaConfig;
 import com.example.quips.dto.CreateUserRequest;
 import com.example.quips.dto.LoginRequest;
+import com.example.quips.dto.UserDTO;
 import com.example.quips.model.*;
 import com.example.quips.repository.RoleRepository;
 import com.example.quips.repository.UserRepository;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -76,7 +79,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
         }
     }
-    @CrossOrigin(origins = "*") // O especifica el origen permitido
     @GetMapping("/me")
     public ResponseEntity<?> getMyUserInfo(@RequestHeader("Authorization") String token) {
         try {
@@ -88,15 +90,36 @@ public class UserController {
 
             // Retornar los datos del usuario si es encontrado
             if (user.isPresent()) {
-                return ResponseEntity.ok(user.get());
+                User foundUser = user.get();
+
+                // Obtener los roles del usuario (si los tienes implementados)
+                Set<String> roles = foundUser.getRoles().stream()
+                        .map(role -> role.getName().name())
+                        .collect(Collectors.toSet());
+
+                // Obtener los coins de la wallet
+                double coins = (foundUser.getWallet() != null) ? foundUser.getWallet().getCoins() : 0.0;
+
+                // Crear el DTO con la información del usuario, incluyendo las monedas
+                UserDTO userDTO = new UserDTO(
+                        foundUser.getUsername(),
+                        foundUser.getFirstName(),
+                        foundUser.getLastName(),
+                        foundUser.getEmail(),
+                        roles,
+                        coins  // Pasar las monedas desde la wallet del usuario
+                );
+
+                return ResponseEntity.ok(userDTO);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
             }
         } catch (Exception e) {
-            // Manejar cualquier excepción relacionada con el token JWT
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token no válido o expirado.");
         }
     }
+
+
 
 
 
@@ -214,6 +237,18 @@ public class UserController {
             user.setLastName(userDetails.getLastName());
             user.setEmail(userDetails.getEmail());             // Actualiza el email
             user.setPhoneNumber(userDetails.getPhoneNumber()); // Actualiza el número de celular
+
+
+            // Lógica para actualizar los roles
+            if (userDetails.getRoles() != null && !userDetails.getRoles().isEmpty()) {
+                // Elimina los roles actuales y añade los nuevos
+                user.getRoles().clear();
+                for (Role role : userDetails.getRoles()) {
+                    Role existingRole = roleRepository.findByName(role.getName())
+                            .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + role.getName()));
+                    user.getRoles().add(existingRole);
+                }
+            }
 
             // Recuerda cifrar la contraseña en un entorno real
 
