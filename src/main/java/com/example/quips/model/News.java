@@ -19,5 +19,5 @@ public class News {
     private String title;
     private String content;
     private LocalDateTime publishedAt;
-
+    private String imageUrl;
 }
