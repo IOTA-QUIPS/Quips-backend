@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -22,6 +23,12 @@ public class ChatController {
     @PostMapping("/conversation")
     public ResponseEntity<Conversation> createOrGetConversation(@RequestParam Long user1Id, @RequestParam Long user2Id) {
         Conversation conversation = chatService.getOrCreateConversation(user1Id, user2Id);
+
+        // Manejar el caso en el que aún no haya mensajes
+        if (conversation.getMessages() == null) {
+            conversation.setMessages(new ArrayList<>());  // Establecer una lista vacía si no hay mensajes
+        }
+
         return ResponseEntity.ok(conversation);
     }
 

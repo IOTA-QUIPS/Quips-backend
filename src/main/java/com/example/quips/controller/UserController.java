@@ -102,10 +102,12 @@ public class UserController {
 
                 // Crear el DTO con la información del usuario, incluyendo las monedas
                 UserDTO userDTO = new UserDTO(
+                        foundUser.getId(),  // Agregar el ID aquí
                         foundUser.getUsername(),
                         foundUser.getFirstName(),
                         foundUser.getLastName(),
                         foundUser.getEmail(),
+                        foundUser.getPhoneNumber(),
                         roles,
                         coins  // Pasar las monedas desde la wallet del usuario
                 );
