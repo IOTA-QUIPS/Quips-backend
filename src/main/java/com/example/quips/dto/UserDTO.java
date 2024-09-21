@@ -16,9 +16,10 @@ public class UserDTO {
     private String phoneNumber;  // Agregar campo para el número de teléfono
     private Set<String> roles;  // Si el usuario tiene roles asociadosxX
     private double coins;  // Agregar campo para las monedas
+    private boolean active;
 
     // Constructor, Getters y Setters
-    public UserDTO(Long id, String username, String firstName, String lastName, String email, String phoneNumber, Set<String> roles, double coins) {
+    public UserDTO(Long id, String username, String firstName, String lastName, String email, String phoneNumber, Set<String> roles, double coins, boolean active) {
         this.id = id;
         this.username = username;
         this.firstName = firstName;
@@ -27,6 +28,7 @@ public class UserDTO {
         this.phoneNumber = phoneNumber;  // Asignar el número de teléfono
         this.roles = roles;
         this.coins = coins;
+        this.active = active;  // Inicializar el campo active
     }
 
     // Getters y Setters

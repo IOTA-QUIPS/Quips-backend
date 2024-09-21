@@ -7,7 +7,9 @@ import com.example.quips.dto.UserDTO;
 import com.example.quips.model.*;
 import com.example.quips.repository.RoleRepository;
 import com.example.quips.repository.UserRepository;
+import com.example.quips.repository.VerificationTokenRepository;
 import com.example.quips.repository.WalletRepository;
+import com.example.quips.service.EmailService;
 import com.example.quips.service.SistemaService;
 import com.example.quips.util.JwtUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,10 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -35,6 +35,15 @@ public class UserController {
 
     @Autowired
     private WalletRepository walletRepository; // Inyectar WalletRepository
+
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private VerificationTokenRepository verificationTokenRepository; // Inyectar WalletRepository
+
+
 
     @Autowired
     private RoleRepository roleRepository; // Inyectar RoleRepository
@@ -64,6 +73,11 @@ public class UserController {
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
+
+            // Verificar si la cuenta del usuario está activada
+            if (!user.isActive()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Cuenta no activada. Por favor, verifica tu correo para activar la cuenta.");
+            }
 
             // Comparar contraseñas (recomendable usar hash en producción)
             if (user.getPassword().equals(request.getPassword())) {
@@ -103,15 +117,16 @@ public class UserController {
 
                 // Crear el DTO con la información del usuario, incluyendo las monedas
                 UserDTO userDTO = new UserDTO(
-                        foundUser.getId(),  // Agregar el ID aquí
-                        foundUser.getUsername(),
-                        foundUser.getFirstName(),
-                        foundUser.getLastName(),
-                        foundUser.getEmail(),
-                        foundUser.getPhoneNumber(),
+                                        foundUser.getId(),  // Agregar el ID aquí
+                                        foundUser.getUsername(),
+                                        foundUser.getFirstName(),
+                                        foundUser.getLastName(),
+                                        foundUser.getEmail(),
+                                        foundUser.getPhoneNumber(),
                         roles,
-                        coins  // Pasar las monedas desde la wallet del usuario
-                );
+                        coins,
+                        foundUser.isActive()  // Pasar las monedas desde la wallet del usuario
+                                );
 
                 return ResponseEntity.ok(userDTO);
             } else {
@@ -160,6 +175,8 @@ public class UserController {
             user.setEmail(request.getEmail());           // Establece el email
             user.setPhoneNumber(request.getPhoneNumber()); // Establece el número de celular
             user.setWallet(wallet);
+            user.setActive(false); // Cuenta no activa hasta verificación
+
 
             bovedaCero.restarTokens(tokensAsignados);
             sistema.agregarJugador(user);
@@ -171,6 +188,14 @@ public class UserController {
 
             walletRepository.save(wallet);
             userRepository.save(user);
+
+            String token = UUID.randomUUID().toString();
+            VerificationToken verificationToken = new VerificationToken(token, user);
+            verificationTokenRepository.save(verificationToken);
+
+            // Enviar correo con el enlace de verificación
+            String verificationLink = "http://localhost:8080/api/users/verify?token=" + token;
+            emailService.sendVerificationEmail(user.getEmail(), verificationLink);
 
             long tokensEnCirculacion = sistemaConfig.getTokensIniciales() - bovedaCero.getTokens();
             System.out.println("Usuario " + user.getUsername() + " ha sido creado con " + tokensAsignados + " tokens.");
@@ -239,7 +264,8 @@ public class UserController {
             user.setFirstName(userDetails.getFirstName()); // Nuevo campo
             user.setLastName(userDetails.getLastName());
             user.setEmail(userDetails.getEmail());             // Actualiza el email
-            user.setPhoneNumber(userDetails.getPhoneNumber()); // Actualiza el número de celular
+            user.setPhoneNumber(userDetails.getPhoneNumber());
+            user.setActive(userDetails.isActive());// Actualiza el número de celular
 
 
             // Lógica para actualizar los roles
@@ -267,6 +293,36 @@ public class UserController {
     }
 
     // Eliminar un usuario
+
+
+    @GetMapping("/verify")
+    @CrossOrigin(origins = "*")
+    public ResponseEntity<?> verifyUser(@RequestParam("token") String token) {
+        Optional<VerificationToken> verificationTokenOpt = verificationTokenRepository.findByToken(token);
+
+        if (verificationTokenOpt.isPresent()) {
+            VerificationToken verificationToken = verificationTokenOpt.get();
+            User user = verificationToken.getUser();
+
+            // Verificar si el token ha expirado
+            if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El token ha expirado.");
+            }
+
+            // Activar la cuenta del usuario
+            user.setActive(true);
+            userRepository.save(user);
+
+            // Eliminar el token de verificación
+            verificationTokenRepository.delete(verificationToken);
+
+            return ResponseEntity.ok("Cuenta activada con éxito.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Token de verificación inválido.");
+        }
+    }
+
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         if (userRepository.existsById(id)) {
