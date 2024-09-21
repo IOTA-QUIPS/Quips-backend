@@ -14,7 +14,7 @@ public class UserDTO {
     private String lastName;
     private String email;
     private String phoneNumber;  // Agregar campo para el número de teléfono
-    private Set<String> roles;  // Si el usuario tiene roles asociados
+    private Set<String> roles;  // Si el usuario tiene roles asociadosxX
     private double coins;  // Agregar campo para las monedas
 
     // Constructor, Getters y Setters

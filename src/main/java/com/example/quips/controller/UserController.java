@@ -79,6 +79,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
         }
     }
+    @CrossOrigin(origins = "*")
     @GetMapping("/me")
     public ResponseEntity<?> getMyUserInfo(@RequestHeader("Authorization") String token) {
         try {
