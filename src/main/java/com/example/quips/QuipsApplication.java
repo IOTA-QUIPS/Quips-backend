@@ -10,4 +10,5 @@ public class QuipsApplication {
         SpringApplication.run(QuipsApplication.class, args);
     }
 
+
 }

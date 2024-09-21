@@ -10,4 +10,6 @@ public class CreateUserRequest {
     private String password;
     private String firstName;  // Nuevo campo
     private String lastName;   // Nuevo campo
+    private String email;        // Nuevo campo
+    private String phoneNumber;  // Nuevo campo
 }

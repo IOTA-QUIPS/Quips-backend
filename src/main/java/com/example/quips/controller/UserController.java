@@ -3,9 +3,9 @@ package com.example.quips.controller;
 import com.example.quips.config.SistemaConfig;
 import com.example.quips.dto.CreateUserRequest;
 import com.example.quips.dto.LoginRequest;
-import com.example.quips.model.BovedaCero;
-import com.example.quips.model.User;
-import com.example.quips.model.Wallet;
+import com.example.quips.dto.UserDTO;
+import com.example.quips.model.*;
+import com.example.quips.repository.RoleRepository;
 import com.example.quips.repository.UserRepository;
 import com.example.quips.repository.WalletRepository;
 import com.example.quips.service.SistemaService;
@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -33,6 +35,9 @@ public class UserController {
 
     @Autowired
     private WalletRepository walletRepository; // Inyectar WalletRepository
+
+    @Autowired
+    private RoleRepository roleRepository; // Inyectar RoleRepository
 
     @Autowired
     private SistemaConfig sistemaConfig;  // Inyección de SistemaConfig
@@ -74,7 +79,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
         }
     }
-    @CrossOrigin(origins = "*") // O especifica el origen permitido
+    @CrossOrigin(origins = "*")
     @GetMapping("/me")
     public ResponseEntity<?> getMyUserInfo(@RequestHeader("Authorization") String token) {
         try {
@@ -86,15 +91,38 @@ public class UserController {
 
             // Retornar los datos del usuario si es encontrado
             if (user.isPresent()) {
-                return ResponseEntity.ok(user.get());
+                User foundUser = user.get();
+
+                // Obtener los roles del usuario (si los tienes implementados)
+                Set<String> roles = foundUser.getRoles().stream()
+                        .map(role -> role.getName().name())
+                        .collect(Collectors.toSet());
+
+                // Obtener los coins de la wallet
+                double coins = (foundUser.getWallet() != null) ? foundUser.getWallet().getCoins() : 0.0;
+
+                // Crear el DTO con la información del usuario, incluyendo las monedas
+                UserDTO userDTO = new UserDTO(
+                        foundUser.getId(),  // Agregar el ID aquí
+                        foundUser.getUsername(),
+                        foundUser.getFirstName(),
+                        foundUser.getLastName(),
+                        foundUser.getEmail(),
+                        foundUser.getPhoneNumber(),
+                        roles,
+                        coins  // Pasar las monedas desde la wallet del usuario
+                );
+
+                return ResponseEntity.ok(userDTO);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
             }
         } catch (Exception e) {
-            // Manejar cualquier excepción relacionada con el token JWT
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token no válido o expirado.");
         }
     }
+
+
 
 
 
@@ -109,7 +137,6 @@ public class UserController {
     @CrossOrigin(origins = "*") // O especifica el origen permitido
     @PostMapping
     public ResponseEntity<String> createUser(@RequestBody CreateUserRequest request) {
-        // Verificar si se ha alcanzado el límite de jugadores para la fase actual
         int jugadoresEnFase = sistema.getJugadoresEnFase();
         int cuotaFaseActual = sistemaConfig.getCuotasPorFase()[sistema.getFaseActual() - 1];
 
@@ -118,43 +145,88 @@ public class UserController {
                     .body("No se puede agregar más jugadores hasta que se transicione de fase.");
         }
 
-        // Proceder con la creación del usuario
         int tokensAsignados = sistemaConfig.getTokensPorJugador();
         long tokensDisponibles = bovedaCero.getTokens();
 
         if (tokensDisponibles >= tokensAsignados) {
-            // Crear el usuario y su wallet asociada
             Wallet wallet = new Wallet();
             wallet.setCoins(tokensAsignados);
 
             User user = new User();
             user.setUsername(request.getUsername());
             user.setPassword(request.getPassword());
-            user.setFirstName(request.getFirstName()); // Nuevo campo
+            user.setFirstName(request.getFirstName());
             user.setLastName(request.getLastName());
-            // Asegúrate de cifrar la contraseña en un entorno real
+            user.setEmail(request.getEmail());           // Establece el email
+            user.setPhoneNumber(request.getPhoneNumber()); // Establece el número de celular
             user.setWallet(wallet);
 
             bovedaCero.restarTokens(tokensAsignados);
-
-            // Agregar el usuario al sistema para gestionar la fase
             sistema.agregarJugador(user);
 
-            // Guardar la wallet y luego el usuario
+            // Asignar el rol USER por defecto
+            Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                    .orElseThrow(() -> new RuntimeException("Error: Rol USER no encontrado."));
+            user.getRoles().add(userRole);
+
             walletRepository.save(wallet);
             userRepository.save(user);
 
             long tokensEnCirculacion = sistemaConfig.getTokensIniciales() - bovedaCero.getTokens();
+            System.out.println("Usuario " + user.getUsername() + " ha sido creado con " + tokensAsignados + " tokens.");
 
-            // Mostrar mensaje en consola
-            System.out.println("Usuario " + user.getUsername() + " ha sido creado con " + tokensAsignados + " tokens. Tokens en circulación: " + tokensEnCirculacion + ". Tokens restantes en Bóveda Cero: " + bovedaCero.getTokens());
-
-            String responseMessage = "Usuario creado exitosamente. Tokens en circulación: " + tokensEnCirculacion + ". Tokens restantes en Bóveda Cero: " + bovedaCero.getTokens();
+            String responseMessage = "Usuario creado exitosamente. Tokens en circulación: " + tokensEnCirculacion;
             return ResponseEntity.ok(responseMessage);
         } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No hay suficientes tokens disponibles en la Bóveda Cero para asignar.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No hay suficientes tokens disponibles.");
         }
     }
+
+    @PutMapping("/admin/{id}")
+    public ResponseEntity<?> makeAdmin(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+
+        // Verificar que el usuario autenticado es administrador
+        User requester = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        boolean isAdmin = requester.getRoles().stream()
+                .anyMatch(role -> role.getName().equals(ERole.ROLE_ADMIN));
+
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para hacer esto.");
+        }
+
+        // Asignar el rol ADMIN al usuario especificado
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                .orElseThrow(() -> new RuntimeException("Error: Rol ADMIN no encontrado."));
+        user.getRoles().add(adminRole);
+
+        userRepository.save(user);
+        return ResponseEntity.ok("El usuario ha sido promovido a ADMIN.");
+    }
+
+    @GetMapping("/admin/overview")
+    public ResponseEntity<?> getAdminOverview(@RequestHeader("Authorization") String token) {
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+
+        // Verificar que el usuario tiene el rol ADMIN
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(role -> role.getName().equals(ERole.ROLE_ADMIN));
+
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para acceder a esta información.");
+        }
+
+        // Lógica para mostrar el "overview" para administradores
+        return ResponseEntity.ok("Datos del administrador");
+    }
+
 
     // Actualizar un usuario existente
     @PutMapping("/{id}")
@@ -166,6 +238,20 @@ public class UserController {
             user.setPassword(userDetails.getPassword());
             user.setFirstName(userDetails.getFirstName()); // Nuevo campo
             user.setLastName(userDetails.getLastName());
+            user.setEmail(userDetails.getEmail());             // Actualiza el email
+            user.setPhoneNumber(userDetails.getPhoneNumber()); // Actualiza el número de celular
+
+
+            // Lógica para actualizar los roles
+            if (userDetails.getRoles() != null && !userDetails.getRoles().isEmpty()) {
+                // Elimina los roles actuales y añade los nuevos
+                user.getRoles().clear();
+                for (Role role : userDetails.getRoles()) {
+                    Role existingRole = roleRepository.findByName(role.getName())
+                            .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + role.getName()));
+                    user.getRoles().add(existingRole);
+                }
+            }
 
             // Recuerda cifrar la contraseña en un entorno real
 

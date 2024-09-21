@@ -48,9 +48,9 @@ public class TransactionController {
         User sender = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Sender not authenticated"));
 
-        // Verificar que el remitente y el receptor existen
-        User receiver = userRepository.findByAccountNumber(request.getReceiverAccountNumber())
-                .orElseThrow(() -> new IllegalArgumentException("Receiver account not found"));
+        // Verificar que el remitente y el receptor existen por phoneNumber
+        User receiver = userRepository.findByPhoneNumber(request.getReceiverPhoneNumber())
+                .orElseThrow(() -> new IllegalArgumentException("Receiver phone number not found"));
 
         // Crear la transacción usando el servicio
         Transaction transaction = transactionService.createTransaction(
@@ -65,18 +65,19 @@ public class TransactionController {
         return ResponseEntity.ok(transaction);
     }
 
-    // Obtener historial de transacciones de un usuario autenticado
+
+    // Obtener historial de transacciones por número de teléfono
     @CrossOrigin(origins = "*")
-    @GetMapping("/history/{accountNumber}")
+    @GetMapping("/history/{phoneNumber}")
     public List<Transaction> getTransactionHistory(
-            @RequestHeader("Authorization") String token,  // Validación de token
-            @PathVariable String accountNumber) {
+            @RequestHeader("Authorization") String token,
+            @PathVariable String phoneNumber) {
 
         // Extraer el nombre de usuario del token
         String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
 
         // Validar que el usuario autenticado puede acceder al historial
-        User user = userRepository.findByAccountNumber(accountNumber)
+        User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!user.getUsername().equals(username)) {
