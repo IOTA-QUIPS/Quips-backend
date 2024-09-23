@@ -11,6 +11,7 @@ import com.example.quips.repository.VerificationTokenRepository;
 import com.example.quips.repository.WalletRepository;
 import com.example.quips.service.EmailService;
 import com.example.quips.service.SistemaService;
+import com.example.quips.util.CodeGenerator;
 import com.example.quips.util.JwtUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@CrossOrigin(origins = "*") // O especifica el origen permitido
 @RestController
 @RequestMapping("/api/users")
 @Tag(name = "User", description = "API para gestionar usuarios")
@@ -177,9 +179,31 @@ public class UserController {
             user.setWallet(wallet);
             user.setActive(false); // Cuenta no activa hasta verificación
 
+            // **Generar el código de referido**
+            String referralCode = CodeGenerator.generateReferralCode();
+            user.setReferralCode(referralCode);
+
 
             bovedaCero.restarTokens(tokensAsignados);
             sistema.agregarJugador(user);
+
+            // Verificar si hay un código de referido válido
+            if (request.getReferralCode() != null && !request.getReferralCode().isEmpty()) {
+                Optional<User> referrerOptional = userRepository.findByReferralCode(request.getReferralCode());
+
+                if (referrerOptional.isPresent()) {
+                    User referrer = referrerOptional.get();
+
+                    // Añadir 3 monedas al usuario que proporcionó el código de referido
+                    referrer.getWallet().setCoins(referrer.getWallet().getCoins() + 3);
+                    walletRepository.save(referrer.getWallet());
+
+                    // Restar 3 monedas de BovedaCero
+                    bovedaCero.restarTokens(3);
+                } else {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Código de referido no válido.");
+                }
+            }
 
             // Asignar el rol USER por defecto
             Role userRole = roleRepository.findByName(ERole.ROLE_USER)
@@ -332,4 +356,5 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
+
 }

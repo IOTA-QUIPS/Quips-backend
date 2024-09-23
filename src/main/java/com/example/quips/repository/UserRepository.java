@@ -12,4 +12,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     Optional<User> findByPhoneNumber(String phoneNumber); // Nuevo método
     List<User> findByPhoneNumberIn(List<String> phoneNumbers); // Método para buscar usuarios por números de teléfono
+
+    // Buscar usuario por su código de referido (referralCode)
+    Optional<User> findByReferralCode(String referralCode);
 }

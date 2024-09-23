@@ -12,4 +12,5 @@ public class CreateUserRequest {
     private String lastName;   // Nuevo campo
     private String email;        // Nuevo campo
     private String phoneNumber;  // Nuevo campo
+    private String referralCode;
 }

@@ -71,6 +71,15 @@ public class NewsController {
         return ResponseEntity.ok("Noticia eliminada.");
     }
 
+    // Obtener noticia por id (para cualquier usuario)
+    @GetMapping("/{id}")
+    public ResponseEntity<NewsDTO> getNewsById(@PathVariable Long id) {
+        News news = newsService.getNewsById(id);
+        NewsDTO newsDTO = convertToDTO(news);
+        return ResponseEntity.ok(newsDTO);
+    }
+
+
     // Método para verificar si el usuario es admin
     private boolean isAdmin(String token) {
         String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));

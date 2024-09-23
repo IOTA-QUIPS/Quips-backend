@@ -29,6 +29,12 @@ public class NewsService {
         return newsRepository.save(news);
     }
 
+    // En el servicio, añade este método si no existe
+    public News getNewsById(Long id) {
+        return newsRepository.findById(id).orElseThrow(() -> new RuntimeException("Noticia no encontrada"));
+    }
+
+
     // Editar una noticia existente
     public News updateNews(Long id, String title, String content, String imageUrl) {
         News news = newsRepository.findById(id)

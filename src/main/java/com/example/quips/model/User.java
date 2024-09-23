@@ -33,6 +33,8 @@ public class User {
 
     private String phoneNumber;
 
+    private String referralCode;  // Campo para el código de referido
+
 
     @Column(unique = true, nullable = false)
     private String accountNumber;
