@@ -125,6 +125,10 @@ public class UserController {
                                         foundUser.getLastName(),
                                         foundUser.getEmail(),
                                         foundUser.getPhoneNumber(),
+                                        foundUser.getAccountNumber(),
+                                        foundUser.getReferralCode(),
+
+
                         roles,
                         coins,
                         foundUser.isActive()  // Pasar las monedas desde la wallet del usuario
