@@ -10,6 +10,7 @@ import java.util.Set;
 public class UserDTO {
     private Long id;  // Agregar el campo id
     private String username;
+    private String sixDigitPin;
     private String firstName;
     private String lastName;
     private String email;
@@ -21,9 +22,10 @@ public class UserDTO {
     private boolean active;
 
     // Constructor, Getters y Setters
-    public UserDTO(Long id, String username, String firstName, String lastName, String email, String phoneNumber, String accountNumber, String referralCode , Set<String> roles, double coins, boolean active) {
+    public UserDTO(Long id, String username, String sixDigitPin, String firstName, String lastName, String email, String phoneNumber, String accountNumber, String referralCode , Set<String> roles, double coins, boolean active) {
         this.id = id;
         this.username = username;
+        this.sixDigitPin = sixDigitPin;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;

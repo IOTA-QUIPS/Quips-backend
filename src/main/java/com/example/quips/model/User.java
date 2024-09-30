@@ -21,6 +21,9 @@ public class User {
     private String username;
     private String password;
 
+    private String sixDigitPin; // Clave de 6 dígitos opcional
+
+
     // Nuevos campos para nombre y apellido
 
     private String firstName;

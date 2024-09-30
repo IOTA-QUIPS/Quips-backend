@@ -4,6 +4,7 @@ import com.example.quips.config.SistemaConfig;
 import com.example.quips.dto.CreateUserRequest;
 import com.example.quips.dto.LoginRequest;
 import com.example.quips.dto.UserDTO;
+import com.example.quips.dto.SetPinRequest;
 import com.example.quips.model.*;
 import com.example.quips.repository.RoleRepository;
 import com.example.quips.repository.UserRepository;
@@ -76,25 +77,21 @@ public class UserController {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
-            // Verificar si la cuenta del usuario está activada
             if (!user.isActive()) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Cuenta no activada. Por favor, verifica tu correo para activar la cuenta.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Cuenta no activada.");
             }
 
-            // Comparar contraseñas (recomendable usar hash en producción)
-            if (user.getPassword().equals(request.getPassword())) {
-                // Generar el token (suponiendo que tienes una clase JwtUtil para manejar JWT)
+            if (user.getPassword().equals(request.getPassword()) || user.getSixDigitPin().equals(request.getPassword())) {
                 String token = jwtUtil.generateToken(user.getUsername());
-
-                // Devolver el token en la respuesta
                 return ResponseEntity.ok(Map.of("token", token));
             } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña o clave de 6 dígitos incorrecta.");
             }
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
         }
     }
+
     @CrossOrigin(origins = "*")
     @GetMapping("/me")
     public ResponseEntity<?> getMyUserInfo(@RequestHeader("Authorization") String token) {
@@ -121,6 +118,7 @@ public class UserController {
                 UserDTO userDTO = new UserDTO(
                                         foundUser.getId(),  // Agregar el ID aquí
                                         foundUser.getUsername(),
+                                        foundUser.getSixDigitPin(),
                                         foundUser.getFirstName(),
                                         foundUser.getLastName(),
                                         foundUser.getEmail(),
@@ -143,6 +141,20 @@ public class UserController {
         }
     }
 
+    @PostMapping("/setPin")
+    public ResponseEntity<?> setSixDigitPin(@RequestHeader("Authorization") String token, @RequestBody SetPinRequest request) {
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOptional = userRepository.findByUsername(username);
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setSixDigitPin(request.getSixDigitPin()); // Asigna el PIN desde el DTO
+            userRepository.save(user);
+            return ResponseEntity.ok("Clave de 6 dígitos configurada con éxito.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+        }
+    }
 
 
 
