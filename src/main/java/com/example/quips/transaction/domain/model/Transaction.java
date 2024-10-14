@@ -1,18 +1,25 @@
 package com.example.quips.transaction.domain.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.example.quips.authentication.domain.model.User;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
 
+@Setter
+@Getter
 @Entity
 public class Transaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     private Long senderWalletId;
     private Long receiverWalletId;
@@ -21,9 +28,18 @@ public class Transaction {
     private String previousTransactionHash2;
     private String hash;
 
+    // Getters y Setters, incluyendo el nuevo campo fase
     private int fase; // Nuevo campo fase
 
-    public Transaction() {}
+    // Campo para registrar el tiempo de la transacción
+    private LocalDateTime timestamp;
+
+    // Constructor
+    public Transaction() {
+        this.timestamp = LocalDateTime.now(); // Se asigna la hora actual por defecto
+    }
+
+
 
     public Transaction(Long senderWalletId, Long receiverWalletId, double amount, String previousTransactionHash1, String previousTransactionHash2, int fase) {
         this.senderWalletId = senderWalletId;
@@ -37,70 +53,6 @@ public class Transaction {
 
     // Getters y Setters
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getSenderWalletId() {
-        return senderWalletId;
-    }
-
-    public void setSenderWalletId(Long senderWalletId) {
-        this.senderWalletId = senderWalletId;
-    }
-
-    public Long getReceiverWalletId() {
-        return receiverWalletId;
-    }
-
-    public void setReceiverWalletId(Long receiverWalletId) {
-        this.receiverWalletId = receiverWalletId;
-    }
-
-    public double getAmount() {
-        return amount;
-    }
-
-    public void setAmount(double amount) {
-        this.amount = amount;
-    }
-
-    public String getPreviousTransactionHash1() {
-        return previousTransactionHash1;
-    }
-
-    public void setPreviousTransactionHash1(String previousTransactionHash1) {
-        this.previousTransactionHash1 = previousTransactionHash1;
-    }
-
-    public String getPreviousTransactionHash2() {
-        return previousTransactionHash2;
-    }
-
-    public void setPreviousTransactionHash2(String previousTransactionHash2) {
-        this.previousTransactionHash2 = previousTransactionHash2;
-    }
-
-    public String getHash() {
-        return hash;
-    }
-
-    public void setHash(String hash) {
-        this.hash = hash;
-    }
-
-    // Getters y Setters, incluyendo el nuevo campo fase
-    public int getFase() {
-        return fase;
-    }
-
-    public void setFase(int fase) {
-        this.fase = fase;
-    }
 
     public String calculateHash() {
         String dataToHash = senderWalletId + receiverWalletId + amount + previousTransactionHash1 + previousTransactionHash2;

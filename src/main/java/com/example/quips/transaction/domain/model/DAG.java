@@ -11,6 +11,11 @@ public class DAG {
         System.out.println("Transacción añadida al DAG con hash: " + transaction.getHash());
     }
 
+    // Método para obtener todas las transacciones
+    public Map<String, Transaction> getTransactions() {
+        return transactions;
+    }
+
     public boolean validateTransaction(Transaction transaction) {
         System.out.println("Validando transacción: " + transaction.getId());
 

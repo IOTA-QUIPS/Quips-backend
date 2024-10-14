@@ -232,6 +232,10 @@ public class UserController {
         user.setWallet(wallet);
         user.setActive(false); // Cuenta no activa hasta verificación
 
+        // **Establecer la fase de inicio del usuario**
+        user.setFaseInicio(sistema.getFaseActual());  // Aquí se establece la fase de inicio
+
+
         // **Generar el código de referido para el nuevo usuario**
         String referralCode = CodeGenerator.generateReferralCode();
         user.setReferralCode(referralCode);

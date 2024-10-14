@@ -47,6 +47,7 @@ public class User {
     private boolean active = false;  // Por defecto, el usuario no estará activo hasta que verifique su correo.
 
 
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "wallet_id", referencedColumnName = "id")
     @JsonManagedReference
@@ -62,12 +63,15 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
+    // Campo para registrar la fase en la que el usuario inició
+    private int faseInicio;
 
 
 
     // Getters y Setters
 
     public User() {
+        this.faseInicio = 1;  // Por defecto, todos los usuarios empiezan en la fase 1
         this.accountNumber = UUID.randomUUID().toString();  // Generar un número de cuenta único al crear el usuario
     }
 
