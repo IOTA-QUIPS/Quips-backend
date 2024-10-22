@@ -59,7 +59,7 @@ public class TransactionService {
         int faseActual = sistemaService.getFaseActual();
 
         // Crear la nueva transacción
-        Transaction transaction = new Transaction(senderWalletId, receiverWalletId, amount,
+        Transaction transaction = new Transaction(senderWallet, receiverWallet, amount,
                 previousTransactionHashes[0], previousTransactionHashes[1], faseActual);
 
         // Establecer el timestamp de la transacción

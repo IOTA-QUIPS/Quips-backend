@@ -14,16 +14,20 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     int countBySenderWalletIdAndFase(Long senderWalletId, int fase);
     int countByReceiverWalletIdAndFase(Long receiverWalletId, int fase);
 
-    // Usando @Query para escribir una consulta SQL/JPA personalizada
-    @Query("SELECT t.user, COUNT(t) as transactionCount FROM Transaction t GROUP BY t.user ORDER BY transactionCount DESC")
+    // Usando @Query para contar las transacciones por usuario a través de sus wallets
+    @Query("SELECT w.user, COUNT(t) as transactionCount " +
+            "FROM Transaction t " +
+            "JOIN t.senderWallet w " +
+            "GROUP BY w.user " +
+            "ORDER BY transactionCount DESC")
     List<Object[]> findTopUsersByTransactions();
 
-    // Para obtener los usuarios que más han enviado transacciones
-    @Query("SELECT t.senderWalletId, COUNT(t) as total FROM Transaction t GROUP BY t.senderWalletId ORDER BY total DESC")
+    // Para obtener los IDs de las wallets de los remitentes y el conteo de transacciones
+    @Query("SELECT t.senderWallet.id, COUNT(t) as total FROM Transaction t GROUP BY t.senderWallet.id ORDER BY total DESC")
     List<Object[]> findTopSenders();
 
-    // Para obtener los usuarios que más han recibido transacciones
-    @Query("SELECT t.receiverWalletId, COUNT(t) as total FROM Transaction t GROUP BY t.receiverWalletId ORDER BY total DESC")
+    // Para obtener los IDs de las wallets de los destinatarios y el conteo de transacciones
+    @Query("SELECT t.receiverWallet.id, COUNT(t) as total FROM Transaction t GROUP BY t.receiverWallet.id ORDER BY total DESC")
     List<Object[]> findTopReceivers();
 
 

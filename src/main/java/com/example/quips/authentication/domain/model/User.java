@@ -39,6 +39,9 @@ public class User {
 
     private String referralCode;  // Campo para el código de referido
 
+    // Código de referido usado al registrarse
+    private String referralCodeUsed;
+
 
     @Column(unique = true, nullable = false)
     private String accountNumber;
@@ -66,9 +69,16 @@ public class User {
     // Campo para registrar la fase en la que el usuario inició
     private int faseInicio;
 
+    // Campo para el total de referidos
+    private int totalReferrals = 0;
 
 
     // Getters y Setters
+
+    // Método para incrementar el total de referidos
+    public void incrementTotalReferrals() {
+        this.totalReferrals++;
+    }
 
     public User() {
         this.faseInicio = 1;  // Por defecto, todos los usuarios empiezan en la fase 1

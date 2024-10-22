@@ -1,5 +1,6 @@
 package com.example.quips.analytics.service;
 
+import com.example.quips.analytics.dto.UserReferralDTO;
 import com.example.quips.authentication.domain.model.User;
 import com.example.quips.authentication.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,14 +17,22 @@ public class ReferralRewardsService {
     @Autowired
     private UserRepository userRepository;
 
-    public List<Map<String, Object>> getTopUsersByReferrals() {
+    public List<UserReferralDTO> getTopUsersByReferrals() {
         List<Object[]> topUsersByReferrals = userRepository.findTopUsersByReferrals();
 
-        return topUsersByReferrals.stream().map(r -> {
-            Map<String, Object> userReferralData = new HashMap<>();
-            userReferralData.put("user", (User) r[0]);
-            userReferralData.put("totalReferrals", (Long) r[1]);  // Suponiendo que el total de referidos es de tipo Long
-            return userReferralData;
+        // Convertir los resultados en una lista de DTOs
+        return topUsersByReferrals.stream().map(result -> {
+            User user = (User) result[0];
+            Long totalReferrals = (Long) result[1];
+
+            // Crear y devolver el DTO
+            return new UserReferralDTO(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    totalReferrals
+            );
         }).collect(Collectors.toList());
     }
 }

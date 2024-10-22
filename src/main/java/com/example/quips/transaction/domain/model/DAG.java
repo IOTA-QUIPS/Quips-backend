@@ -19,6 +19,12 @@ public class DAG {
     public boolean validateTransaction(Transaction transaction) {
         System.out.println("Validando transacción: " + transaction.getId());
 
+        // Verificar si los hashes anteriores son nulos
+        if (transaction.getPreviousTransactionHash1() == null || transaction.getPreviousTransactionHash2() == null) {
+            System.out.println("Error: Los hashes anteriores no pueden ser nulos.");
+            return false;
+        }
+
         // Verificar si la transacción usa los hashes génesis
         if (transaction.getPreviousTransactionHash1().equals("genesis_hash1") &&
                 transaction.getPreviousTransactionHash2().equals("genesis_hash2")) {

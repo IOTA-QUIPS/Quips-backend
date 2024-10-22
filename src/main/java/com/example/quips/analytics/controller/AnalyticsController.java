@@ -1,12 +1,16 @@
 package com.example.quips.analytics.controller;
 
+import com.example.quips.analytics.dto.UserReferralDTO;
 import com.example.quips.analytics.service.*;
+import com.example.quips.transaction.dto.UserTransactionDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -48,9 +52,20 @@ public class AnalyticsController {
         return ResponseEntity.ok(topUsersTransactionService.getTopUsersByTransactions());
     }
 
+    // Nuevo endpoint para obtener los usuarios que más han enviado transacciones
+    @GetMapping("/top-senders")
+    public ResponseEntity<List<UserTransactionDTO>> getTopSenders() {
+        return ResponseEntity.ok(topUsersTransactionService.getTopSenders());
+    }
+
+    @GetMapping("/top-receivers")
+    public ResponseEntity<List<UserTransactionDTO>> getTopReceivers() {
+        return ResponseEntity.ok(topUsersTransactionService.getTopReceivers());
+    }
     @GetMapping("/top-users-referrals")
-    public ResponseEntity<?> getTopUsersByReferrals() {
-        return ResponseEntity.ok(referralRewardsService.getTopUsersByReferrals());
+    public ResponseEntity<List<UserReferralDTO>> getTopUsersByReferrals() {
+        List<UserReferralDTO> topUsers = referralRewardsService.getTopUsersByReferrals();
+        return ResponseEntity.ok(topUsers);
     }
 
     @GetMapping("/phase-timeline")

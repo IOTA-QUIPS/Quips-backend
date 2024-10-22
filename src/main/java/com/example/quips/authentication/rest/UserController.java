@@ -207,12 +207,16 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No hay suficientes tokens disponibles.");
         }
 
-        // **Verificar si se proporcionó un código de referido**
+        // **Si se proporcionó un código de referido, guardarlo**
         if (request.getReferralCode() != null && !request.getReferralCode().isEmpty()) {
             Optional<User> referrerOptional = userRepository.findByReferralCode(request.getReferralCode());
 
-            // Si el código de referido no es válido, detener el registro
-            if (!referrerOptional.isPresent()) {
+            if (referrerOptional.isPresent()) {
+                User referrer = referrerOptional.get();
+                referrer.setReferralCodeUsed(request.getReferralCode()); // Guardar el código usado
+                referrer.incrementTotalReferrals();  // Incrementar el contador de referidos
+                userRepository.save(referrer);
+            } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Código de referido no válido.");
             }
         }
