@@ -1,14 +1,12 @@
 package com.example.quips.analytics.controller;
 
+import com.example.quips.analytics.dto.UserActivityDTO;
 import com.example.quips.analytics.dto.UserReferralDTO;
 import com.example.quips.analytics.service.*;
 import com.example.quips.transaction.dto.UserTransactionDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -32,6 +30,9 @@ public class AnalyticsController {
     @Autowired
     private TransactionActivityService transactionActivityService;
 
+    @Autowired
+    private UserActivityService userActivityService;
+
     @GetMapping("/cycle-status")
     public ResponseEntity<?> getCycleStatus() {
         return ResponseEntity.ok(cycleAnalyticsService.getCycleStatus());
@@ -45,6 +46,18 @@ public class AnalyticsController {
     @GetMapping("/transaction-graph")
     public ResponseEntity<?> getTransactionGraph() {
         return ResponseEntity.ok(transactionGraphService.getTransactionGraph());
+    }
+
+    @GetMapping("/user-activity/{userId}")
+    public ResponseEntity<UserActivityDTO> getUserActivity(@PathVariable Long userId) {
+        UserActivityDTO activity = userActivityService.calculateUserActivity(userId);
+        return ResponseEntity.ok(activity);
+    }
+
+    @GetMapping("/user-activity")
+    public ResponseEntity<List<UserActivityDTO>> getAllUsersActivity() {
+        List<UserActivityDTO> activities = userActivityService.calculateAllUsersActivity();
+        return ResponseEntity.ok(activities);
     }
 
     @GetMapping("/top-users-transactions")

@@ -13,22 +13,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUsername(String username);
 
-    // Consulta para encontrar los usuarios con más referidos
     @Query("SELECT u, COUNT(r) as totalReferrals " +
             "FROM User u LEFT JOIN User r ON r.referralCodeUsed = u.referralCode " +
             "GROUP BY u.id ORDER BY totalReferrals DESC")
     List<Object[]> findTopUsersByReferrals();
 
+    Optional<User> findByPhoneNumber(String phoneNumber);
 
-    Optional<User> findByPhoneNumber(String phoneNumber); // Buscar por número de teléfono
+    List<User> findByPhoneNumberIn(List<String> phoneNumbers);
 
-    List<User> findByPhoneNumberIn(List<String> phoneNumbers); // Buscar usuarios por lista de números de teléfono
-
-    // Buscar usuario por su código de referido (referralCode)
     Optional<User> findByReferralCode(String referralCode);
 
-    Optional<User> findByWalletId(Long walletId);  // Buscar usuario por el ID de la wallet
+    Optional<User> findByWalletId(Long walletId);
 
-    // Buscar usuario por email
-    Optional<User> findByEmail(String email); // Nuevo método para verificar unicidad del email
+    Optional<User> findByEmail(String email);
+
+    // Nuevo método para obtener los usuarios referidos por un usuario específico
+    @Query("SELECT u FROM User u WHERE u.referralCodeUsed = (SELECT user.referralCode FROM User user WHERE user.id = :userId)")
+    List<User> findReferralsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
 }

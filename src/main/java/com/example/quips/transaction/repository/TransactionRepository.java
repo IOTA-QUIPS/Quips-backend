@@ -3,6 +3,7 @@ package com.example.quips.transaction.repository;
 import com.example.quips.transaction.domain.model.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -29,6 +30,14 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     // Para obtener los IDs de las wallets de los destinatarios y el conteo de transacciones
     @Query("SELECT t.receiverWallet.id, COUNT(t) as total FROM Transaction t GROUP BY t.receiverWallet.id ORDER BY total DESC")
     List<Object[]> findTopReceivers();
+
+    // Transacciones enviadas por un usuario específico usando su ID de wallet como filtro
+    @Query("SELECT t FROM Transaction t WHERE t.senderWallet.user.id = :userId")
+    List<Transaction> findSentTransactionsByUserId(@Param("userId") Long userId);
+
+    // Transacciones recibidas por un usuario específico usando su ID de wallet como filtro
+    @Query("SELECT t FROM Transaction t WHERE t.receiverWallet.user.id = :userId")
+    List<Transaction> findReceivedTransactionsByUserId(@Param("userId") Long userId);
 
 
 }
