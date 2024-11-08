@@ -86,7 +86,9 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Cuenta no activada.");
             }
 
-            if (user.getPassword().equals(request.getPassword()) || user.getSixDigitPin().equals(request.getPassword())) {
+            // Verificar la contraseña o el PIN, con chequeo de null para sixDigitPin
+            if (user.getPassword().equals(request.getPassword()) ||
+                    (user.getSixDigitPin() != null && user.getSixDigitPin().equals(request.getPassword()))) {
                 String token = jwtUtil.generateToken(user.getUsername());
                 return ResponseEntity.ok(Map.of("token", token));
             } else {
@@ -175,6 +177,9 @@ public class UserController {
     @CrossOrigin(origins = "*") // O especifica el origen permitido
     @PostMapping
     public ResponseEntity<String> createUser(@RequestBody CreateUserRequest request) {
+
+
+
         // Verificar si el username ya está en uso
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El nombre de usuario ya está en uso.");
