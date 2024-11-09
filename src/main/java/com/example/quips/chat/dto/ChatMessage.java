@@ -6,9 +6,11 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ChatMessage {
-    private String sender;
-    private String content;
-    private String timestamp;
+    private Long senderId;       // ID del remitente
+    private Long receiverId;     // ID del receptor
+    private Long conversationId; // ID de la conversación
+    private String content;      // Contenido del mensaje
+    private String timestamp;    // Marca de tiempo del mensaje (si es necesario)
 
-    // Getters y Setters
+    // Puedes agregar constructores o métodos adicionales si los necesitas
 }
